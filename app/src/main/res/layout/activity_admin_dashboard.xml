@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="#F5F7FA"
+     android:orientation="vertical">
+
+    <RelativeLayout
+         android:layout_height="60dp"
+         android:layout_width="match_parent"
+         android:background="#2196F3"
+         android:paddingHorizontal="16dp">
+
+        <TextView
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:layout_centerVertical="true"
+             android:textSize="20sp"
+             android:textColor="#FFFFFF"
+             android:id="@+id/tvHeaderTitle"
+             android:text="Control Panel"
+             android:textStyle="bold" />
+
+        <ImageView
+             android:layout_height="30dp"
+             android:layout_width="30dp"
+             android:src="@android:drawable/ic_lock_power_off"
+             android:layout_centerVertical="true"
+             app:tint="#FFFFFF"
+             android:layout_alignParentEnd="true"
+             android:id="@+id/btnTopAction" />
+
+    </RelativeLayout>
+
+    <ScrollView
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:fillViewport="true">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:padding="16dp"
+             android:orientation="vertical">
+
+            <LinearLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:orientation="vertical"
+                 android:id="@+id/optionsLayout">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="8dp"
+                     android:textSize="16sp"
+                     android:textColor="#333333"
+                     android:text="Main Actions"
+                     android:textStyle="bold" />
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="10dp"
+                     android:weightSum="2"
+                     android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="55dp"
+                         android:layout_width="0dp"
+                         android:layout_marginEnd="6dp"
+                         app:backgroundTint="#2196F3"
+                         app:cornerRadius="10dp"
+                         android:textColor="#FFFFFF"
+                         android:layout_weight="1"
+                         android:id="@+id/btnFilterMonthWise"
+                         android:text="Month" />
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="55dp"
+                         android:layout_width="0dp"
+                         app:backgroundTint="#3F51B5"
+                         app:cornerRadius="10dp"
+                         android:textColor="#FFFFFF"
+                         android:layout_marginStart="6dp"
+                         android:layout_weight="1"
+                         android:id="@+id/btnFilterIndividual"
+                         android:text="Individual" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="20dp"
+                     android:weightSum="2"
+                     android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="55dp"
+                         android:layout_width="0dp"
+                         android:layout_marginEnd="6dp"
+                         app:backgroundTint="#F44336"
+                         app:cornerRadius="10dp"
+                         android:textColor="#FFFFFF"
+                         android:layout_weight="1"
+                         android:id="@+id/btnWhoNotSubmitted"
+                         android:text="Not Submitted" />
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="55dp"
+                         android:layout_width="0dp"
+                         app:backgroundTint="#4CAF50"
+                         app:cornerRadius="10dp"
+                         android:textColor="#FFFFFF"
+                         android:layout_marginStart="6dp"
+                         android:layout_weight="1"
+                         android:id="@+id/btnDownloadExcel"
+                         android:text="Export Report" />
+
+                </LinearLayout>
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="8dp"
+                     android:textSize="16sp"
+                     android:textColor="#333333"
+                     android:text="Filters &amp; Ranking"
+                     android:textStyle="bold" />
+
+                <HorizontalScrollView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="20dp"
+                     android:scrollbars="none">
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="50dp"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="10dp"
+                             app:backgroundTint="#FFC107"
+                             app:cornerRadius="12dp"
+                             android:textColor="#000000"
+                             android:id="@+id/btnFilterRanking"
+                             android:text="Ranking" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="50dp"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="10dp"
+                             app:backgroundTint="#9C27B0"
+                             app:cornerRadius="12dp"
+                             android:textColor="#FFFFFF"
+                             android:id="@+id/btnOfficerList"
+                             android:text="Officer List" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="50dp"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="10dp"
+                             app:backgroundTint="#FF9800"
+                             app:cornerRadius="12dp"
+                             android:textColor="#FFFFFF"
+                             android:id="@+id/btnApproval"
+                             android:text="Approval List" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="50dp"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="10dp"
+                             app:backgroundTint="#607D8B"
+                             app:cornerRadius="12dp"
+                             android:textColor="#FFFFFF"
+                             android:id="@+id/btnFilterZone"
+                             android:text="Zone" />
+
+                        <com.google.android.material.button.MaterialButton
+                             android:layout_height="50dp"
+                             android:layout_width="wrap_content"
+                             android:layout_marginEnd="4dp"
+                             app:backgroundTint="#009688"
+                             app:cornerRadius="12dp"
+                             android:textColor="#FFFFFF"
+                             android:id="@+id/btnFilterTeam"
+                             android:text="Manager Team" />
+
+                    </LinearLayout>
+
+                </HorizontalScrollView>
+
+            </LinearLayout>
+
+            <View
+                 android:layout_height="1dp"
+                 android:layout_width="match_parent"
+                 android:layout_marginBottom="16dp"
+                 android:background="#D1D9E6" />
+
+            <RelativeLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:layout_marginBottom="12dp">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:layout_centerVertical="true"
+                     android:textSize="18sp"
+                     android:textColor="#333333"
+                     android:id="@+id/tvFilterStatus"
+                     android:text="Dashboard: 0 cards"
+                     android:textStyle="bold" />
+
+                <ImageView
+                     android:layout_height="32dp"
+                     android:layout_width="32dp"
+                     android:src="@android:drawable/ic_popup_sync"
+                     android:layout_centerVertical="true"
+                     app:tint="#2196F3"
+                     android:layout_alignParentEnd="true"
+                     android:id="@+id/btnRefresh" />
+
+            </RelativeLayout>
+
+            <ProgressBar
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:visibility="gone"
+                 android:id="@+id/progressBar"
+                 android:layout_gravity="center" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:nestedScrollingEnabled="false"
+                 android:id="@+id/recyclerAdminReport" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

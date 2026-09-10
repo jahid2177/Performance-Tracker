@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="#F5F7FA"
+     android:padding="24dp">
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         app:layout_constraintTop_toTopOf="parent"
+         app:layout_constraintStart_toStartOf="parent"
+         android:textSize="28sp"
+         android:textColor="@color/primary"
+         app:layout_constraintEnd_toEndOf="parent"
+         app:layout_constraintBottom_toTopOf="@+id/cardLogin"
+         app:layout_constraintVertical_bias="0.4"
+         android:id="@+id/tvTitle"
+         android:text="Performance Tracker"
+         android:textStyle="bold" />
+
+    <com.google.android.material.card.MaterialCardView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         app:layout_constraintTop_toTopOf="parent"
+         app:cardElevation="8dp"
+         app:layout_constraintBottom_toBottomOf="parent"
+         app:cardCornerRadius="16dp"
+         android:id="@+id/cardLogin">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:padding="24dp"
+             android:orientation="vertical">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:layout_marginBottom="24dp"
+                 android:textSize="20sp"
+                 android:layout_gravity="center"
+                 android:text="Welcome Back"
+                 android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:hint="User ID / Admin ID"
+                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:inputType="text"
+                     android:id="@+id/etId" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:hint="Enter Password"
+                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                 app:passwordToggleEnabled="true"
+                 android:layout_marginTop="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:inputType="textPassword"
+                     android:id="@+id/etPassword" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                 android:layout_height="60dp"
+                 android:layout_width="match_parent"
+                 app:cornerRadius="12dp"
+                 android:backgroundTint="@color/primary"
+                 android:layout_marginTop="24dp"
+                 android:id="@+id/btnLogin"
+                 android:text="LOGIN" />
+
+            <LinearLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:orientation="horizontal"
+                 android:layout_marginTop="20dp"
+                 android:layout_gravity="center">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="#666666"
+                     android:text="Don't have an account? " />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:background="?attr/selectableItemBackground"
+                     android:padding="4dp"
+                     android:textColor="@color/primary"
+                     android:id="@+id/tvRegisterLink"
+                     android:text="Register Now"
+                     android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

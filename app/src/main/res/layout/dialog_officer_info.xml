@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_height="wrap_content"
+     android:layout_width="match_parent"
+     android:layout_margin="16dp"
+     app:cardElevation="8dp"
+     app:cardCornerRadius="16dp">
+
+    <LinearLayout
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:background="#FFFFFF"
+         android:orientation="vertical">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:background="#0D47A1"
+             android:gravity="center"
+             android:paddingVertical="24dp"
+             android:orientation="vertical"
+             android:paddingHorizontal="16dp">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="28sp"
+                 android:fontFamily="sans-serif-condensed"
+                 android:textColor="#FFFFFF"
+                 android:text="Officer Information"
+                 android:textStyle="italic|bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="22sp"
+                 android:fontFamily="sans-serif-condensed"
+                 android:textColor="#FFFFFF"
+                 android:layout_marginTop="16dp"
+                 android:id="@+id/tvInfoName"
+                 android:text="Name: Md Jahidul Islam"
+                 android:textStyle="italic|bold" />
+
+        </LinearLayout>
+
+        <TableLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:padding="24dp"
+             android:stretchColumns="1">
+
+            <TableRow
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:layout_marginBottom="8dp">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:text="Employee ID" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:paddingStart="16dp"
+                     android:id="@+id/tvInfoId"
+                     android:text=": 202429021688"
+                     android:textStyle="bold" />
+
+            </TableRow>
+
+            <TableRow
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:layout_marginBottom="8dp">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:text="Zone" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:paddingStart="16dp"
+                     android:id="@+id/tvInfoZone"
+                     android:text=": KHULNA" />
+
+            </TableRow>
+
+            <TableRow
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:layout_marginBottom="8dp">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:text="Mobile" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:paddingStart="16dp"
+                     android:id="@+id/tvInfoMobile"
+                     android:text=": 01686556444" />
+
+            </TableRow>
+
+            <TableRow
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:text="Branch" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:fontFamily="serif"
+                     android:textColor="#000000"
+                     android:paddingStart="16dp"
+                     android:id="@+id/tvInfoBranch"
+                     android:text=": Mirerdanga" />
+
+            </TableRow>
+
+        </TableLayout>
+
+        <View
+             android:layout_height="16dp"
+             android:layout_width="match_parent"
+             android:background="#4CAF50" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

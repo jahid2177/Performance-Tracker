@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "303522532893",
+    "project_id": "performance-tracker-66b42",
+    "storage_bucket": "performance-tracker-66b42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303522532893:android:88c694baa54a0c758a80f4",
+        "android_client_info": {
+          "package_name": "com.performance.tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-jzhT28VXDE90TYtXRDyIXi2UhjWYvh4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

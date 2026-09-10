@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // 🔥 এখানে JitPack যুক্ত করা হলো
+        maven { url 'https://jitpack.io' }
+    }
+}
+rootProject.name = "Performance Tracker"
+include ':app'

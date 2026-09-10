@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="#F5F7FA"
+     android:orientation="vertical">
+
+    <LinearLayout
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:background="#2196F3"
+         android:gravity="center_vertical"
+         android:elevation="4dp"
+         android:padding="16dp">
+
+        <TextView
+             android:layout_height="wrap_content"
+             android:layout_width="0dp"
+             android:textSize="20sp"
+             android:textColor="#FFFFFF"
+             android:layout_weight="1"
+             android:id="@+id/tvPageTitle"
+             android:text="Dashboard"
+             android:textStyle="bold" />
+
+        <ImageView
+             android:layout_height="28dp"
+             android:layout_width="28dp"
+             android:src="@android:drawable/ic_lock_power_off"
+             app:tint="#FFFFFF"
+             android:id="@+id/btnExit" />
+
+    </LinearLayout>
+
+    <LinearLayout
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:visibility="visible"
+         android:padding="16dp"
+         android:orientation="vertical"
+         android:id="@+id/mainOptionsLayout">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:weightSum="2"
+             android:layout_marginBottom="12dp"
+             android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                 android:layout_height="100dp"
+                 android:layout_width="0dp"
+                 android:layout_marginEnd="6dp"
+                 app:cardElevation="2dp"
+                 app:cardBackgroundColor="#E3F2FD"
+                 app:cardCornerRadius="12dp"
+                 android:layout_weight="1"
+                 android:id="@+id/cardSubmission">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="#1565C0"
+                     android:layout_gravity="center"
+                     android:text="NEW SUBMISSION"
+                     android:textStyle="bold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                 android:layout_height="100dp"
+                 android:layout_width="0dp"
+                 app:cardElevation="2dp"
+                 app:cardBackgroundColor="#E8F5E9"
+                 android:layout_marginStart="6dp"
+                 app:cardCornerRadius="12dp"
+                 android:layout_weight="1"
+                 android:id="@+id/cardOfficerList">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="#2E7D32"
+                     android:layout_gravity="center"
+                     android:text="OFFICER LIST"
+                     android:textStyle="bold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:weightSum="2"
+             android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                 android:layout_height="100dp"
+                 android:layout_width="0dp"
+                 android:layout_marginEnd="6dp"
+                 app:cardElevation="2dp"
+                 app:cardBackgroundColor="#FFF3E0"
+                 app:cardCornerRadius="12dp"
+                 android:layout_weight="1"
+                 android:id="@+id/cardMyReport">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="#E65100"
+                     android:layout_gravity="center"
+                     android:text="MY REPORT"
+                     android:textStyle="bold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                 android:layout_height="100dp"
+                 android:layout_width="0dp"
+                 app:cardElevation="2dp"
+                 app:cardBackgroundColor="#FCE4EC"
+                 android:layout_marginStart="6dp"
+                 app:cardCornerRadius="12dp"
+                 android:layout_weight="1"
+                 android:id="@+id/cardRanking">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="#C2185B"
+                     android:layout_gravity="center"
+                     android:text="RANKING"
+                     android:textStyle="bold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:visibility="gone"
+         android:padding="16dp"
+         android:orientation="vertical"
+         android:id="@+id/submissionFormLayout">
+
+        <TextView
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:layout_marginBottom="8dp"
+             android:textSize="18sp"
+             android:textColor="#000000"
+             android:id="@+id/tvEmpName"
+             android:text="Welcome, Md Jahidul Islam"
+             android:textStyle="bold" />
+
+        <TextView
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:textSize="16sp"
+             android:textColor="#000000"
+             android:layout_marginTop="8dp"
+             android:text="Reporting Month:"
+             android:textStyle="bold" />
+
+        <Spinner
+             android:layout_height="50dp"
+             android:layout_width="match_parent"
+             android:background="@drawable/bg_edittext_simple"
+             android:backgroundTint="#000000"
+             android:layout_marginTop="4dp"
+             android:id="@+id/spinnerMonth">
+
+        </Spinner>
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:orientation="horizontal"
+             android:layout_marginTop="16dp"
+             android:paddingHorizontal="4dp">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:textSize="14sp"
+                 android:textColor="#000000"
+                 android:layout_weight="1"
+                 android:text="Name"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:textSize="14sp"
+                 android:textColor="#000000"
+                 android:layout_weight="1"
+                 android:text="A/C No"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:gravity="center_horizontal"
+                 android:textSize="14sp"
+                 android:textColor="#000000"
+                 android:layout_weight="1"
+                 android:text="Limit"
+                 android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <ScrollView
+             android:layout_height="0dp"
+             android:layout_width="match_parent"
+             android:layout_marginTop="8dp"
+             android:layout_weight="1">
+
+            <LinearLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:orientation="vertical"
+                 android:id="@+id/rowsContainer">
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <Button
+             android:layout_height="55dp"
+             android:layout_width="match_parent"
+             app:cornerRadius="8dp"
+             android:backgroundTint="#4CAF50"
+             android:layout_marginTop="8dp"
+             android:id="@+id/btnAddMore"
+             android:text="Add More Row"
+             android:textStyle="bold" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:textColor="#000000"
+             app:buttonTint="#F44336"
+             android:layout_marginTop="4dp"
+             android:id="@+id/cbZeroApproval"
+             android:text="Zero approval this month"
+             android:textStyle="bold" />
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:weightSum="2"
+             android:orientation="horizontal"
+             android:layout_marginTop="12dp">
+
+            <Button
+                 android:layout_height="55dp"
+                 android:layout_width="0dp"
+                 android:layout_marginEnd="6dp"
+                 app:cornerRadius="8dp"
+                 android:backgroundTint="#607D8B"
+                 android:layout_weight="1"
+                 android:id="@+id/btnBackToHome"
+                 android:text="Back"
+                 android:textStyle="bold" />
+
+            <Button
+                 android:layout_height="55dp"
+                 android:layout_width="0dp"
+                 app:cornerRadius="8dp"
+                 android:backgroundTint="#2196F3"
+                 android:layout_weight="1"
+                 android:id="@+id/btnSubmit"
+                 android:text="Submit"
+                 android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

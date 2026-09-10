@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_height="600dp"
+     android:layout_width="match_parent"
+     android:background="#FFFFFF"
+     android:padding="16dp"
+     android:orientation="vertical">
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginBottom="16dp"
+         android:textSize="20sp"
+         android:textColor="#2196F3"
+         android:id="@+id/tvDialogTitle"
+         android:text="Select Option"
+         android:textStyle="bold" />
+
+    <EditText
+         android:layout_height="50dp"
+         android:layout_width="match_parent"
+         android:layout_marginBottom="16dp"
+         android:drawablePadding="12dp"
+         android:background="@drawable/bg_edittext_simple"
+         android:hint="Search here..."
+         android:textColorHint="#9E9E9E"
+         android:drawableStart="@android:drawable/ic_menu_search"
+         android:textColor="#000000"
+         android:paddingHorizontal="16dp"
+         android:inputType="textPersonName"
+         android:id="@+id/etSearchEmployee" />
+
+    <androidx.recyclerview.widget.RecyclerView
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:id="@+id/recyclerEmployeeList" />
+
+</LinearLayout>

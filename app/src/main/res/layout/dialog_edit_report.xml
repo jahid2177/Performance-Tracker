@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_height="wrap_content"
+     android:layout_width="match_parent"
+     android:padding="24dp"
+     android:orientation="vertical">
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginBottom="16dp"
+         android:textSize="18sp"
+         android:textColor="#2196F3"
+         android:text="Edit Performance Record"
+         android:textStyle="bold" />
+
+    <EditText
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginBottom="12dp"
+         android:hint="Applicant Name"
+         android:inputType="textPersonName"
+         android:id="@+id/etEditApplicant" />
+
+    <EditText
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginBottom="12dp"
+         android:hint="Account No (906)"
+         android:inputType="number"
+         android:id="@+id/etEditAccount" />
+
+    <EditText
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:hint="Limit"
+         android:inputType="number"
+         android:id="@+id/etEditLimit" />
+
+</LinearLayout>

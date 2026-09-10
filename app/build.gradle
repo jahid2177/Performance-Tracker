@@ -1,0 +1,89 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'com.performance.tracker'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.performance.tracker"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // 🔥 কনফ্লিক্ট হওয়া সব ফাইল একবারে হ্যান্ডেল করার জন্য পূর্ণাঙ্গ সলিউশন
+    packagingOptions {
+        resources {
+            // ডুপ্লিকেট পাওয়া গেলে প্রথমটি গ্রহণ করবে
+            pickFirsts += 'META-INF/MPL-2.0.txt'
+            pickFirsts += 'META-INF/LGPL-2.1.txt'
+            pickFirsts += 'META-INF/LGPL-2.1.md'
+            pickFirsts += 'META-INF/LICENSES.md' // এই লাইনটি আপনার এরর ফিক্স করবে
+            pickFirsts += 'META-INF/LICENSE.md'
+            pickFirsts += 'META-INF/NOTICE.md'
+            pickFirsts += 'META-INF/LICENSE'
+            pickFirsts += 'META-INF/NOTICE'
+            
+            // অপ্রয়োজনীয় ফাইলগুলো বিল্ড থেকে বাদ দেওয়া হবে
+            excludes += 'META-INF/DEPENDENCIES'
+            excludes += 'META-INF/LICENSE.txt'
+            excludes += 'META-INF/NOTICE.txt'
+            excludes += 'META-INF/ASL2.0'
+            excludes += 'META-INF/*.kotlin_module'
+        }
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    // Core & UI
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // Architecture Components (MVVM)
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:32.7.1')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore-ktx'
+    implementation 'com.google.firebase:firebase-storage-ktx'
+
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
+
+    // Excel (CSV ফরম্যাট যা এক্সেল সাপোর্ট করে)
+    implementation 'com.github.doyaaaaaken:kotlin-csv-jvm:1.9.2' 
+
+    // PDF Generation (OpenPDF)
+    implementation 'com.github.LibrePDF:openpdf:1.3.30'
+
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}

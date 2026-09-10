@@ -1,0 +1,20 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/Performance_Tracker/app/build.gradle",
+      "selection": {
+        "end": {
+          "column": 81,
+          "index": 1902,
+          "line": 60
+        },
+        "start": {
+          "column": 81,
+          "index": 1902,
+          "line": 60
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/Performance_Tracker/app/build.gradle"
+}

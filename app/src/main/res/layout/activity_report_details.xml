@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="#F5F7FA"
+     android:orientation="vertical">
+
+    <LinearLayout
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:background="#2196F3"
+         android:gravity="center_vertical"
+         android:padding="16dp">
+
+        <ImageView
+             android:layout_height="24dp"
+             android:layout_width="24dp"
+             android:layout_marginEnd="16dp"
+             android:src="@android:drawable/ic_menu_revert"
+             app:tint="#FFFFFF"
+             android:id="@+id/btnBack" />
+
+        <TextView
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:textSize="20sp"
+             android:textColor="#FFFFFF"
+             android:text="Report Details"
+             android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_margin="12dp"
+         app:cardElevation="2dp"
+         app:cardBackgroundColor="#E3F2FD"
+         app:cardCornerRadius="8dp">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:padding="16dp"
+             android:orientation="vertical">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="18sp"
+                 android:textColor="#1A237E"
+                 android:id="@+id/tvDetailName"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="15sp"
+                 android:textColor="#E91E63"
+                 android:layout_marginTop="4dp"
+                 android:id="@+id/tvDetailMonth"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="14sp"
+                 android:textColor="#546E7A"
+                 android:id="@+id/tvDetailBranch" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginHorizontal="12dp"
+         app:cardBackgroundColor="#1976D2"
+         app:cardCornerRadius="0dp">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:weightSum="10"
+             android:orientation="horizontal">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:gravity="center"
+                 android:padding="10dp"
+                 android:textColor="#FFFFFF"
+                 android:layout_weight="1.5"
+                 android:text="Sl"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:padding="10dp"
+                 android:textColor="#FFFFFF"
+                 android:layout_weight="3.5"
+                 android:text="Applicant Name"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:gravity="center"
+                 android:padding="10dp"
+                 android:textColor="#FFFFFF"
+                 android:layout_weight="3"
+                 android:text="A/C No"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:gravity="end"
+                 android:padding="10dp"
+                 android:textColor="#FFFFFF"
+                 android:layout_weight="2"
+                 android:text="Limit"
+                 android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.recyclerview.widget.RecyclerView
+         android:layout_height="0dp"
+         android:layout_width="match_parent"
+         android:background="#FFFFFF"
+         android:layout_marginHorizontal="12dp"
+         android:layout_weight="1"
+         android:id="@+id/recyclerTable" />
+
+    <com.google.android.material.card.MaterialCardView
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginBottom="12dp"
+         android:layout_marginHorizontal="12dp"
+         app:cardBackgroundColor="#FFF3E0">
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:padding="12dp"
+             android:orientation="horizontal">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:textSize="15sp"
+                 android:textColor="#E65100"
+                 android:layout_weight="1"
+                 android:text="TOTAL RECORDS &amp; LIMIT:"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="16sp"
+                 android:textColor="#E65100"
+                 android:id="@+id/tvTotalLimit"
+                 android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>
