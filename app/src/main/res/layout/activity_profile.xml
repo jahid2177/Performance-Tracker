@@ -3,73 +3,93 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
+    android:background="@color/background"
     android:orientation="vertical">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:background="#2196F3"
+        android:layout_height="200dp"
+        android:background="@color/primary"
         android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="#FFFFFF" />
+        <com.google.android.material.card.MaterialCardView
+             android:layout_height="40dp"
+             android:layout_width="40dp"
+             app:cardCornerRadius="20dp"
+             app:cardElevation="0dp"
+             app:strokeWidth="0dp"
+             app:cardBackgroundColor="#33FFFFFF"
+             android:clickable="true"
+             android:focusable="true"
+             android:id="@+id/btnBack">
+
+            <ImageView
+                 android:layout_height="20dp"
+                 android:layout_width="20dp"
+                 android:layout_gravity="center"
+                 android:src="@drawable/ic_chevron_right"
+                 android:rotation="180"
+                 app:tint="#FFFFFF" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="110dp"
-            android:layout_height="110dp"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:layout_centerInParent="true"
-            app:cardCornerRadius="55dp"
-            app:cardElevation="8dp"
+            app:cardCornerRadius="50dp"
+            app:cardElevation="0dp"
             app:strokeColor="#FFFFFF"
             app:strokeWidth="3dp">
 
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#E0E0E0"
+                android:background="@color/surface_card"
                 android:scaleType="centerCrop"
-                android:src="@android:drawable/ic_menu_myplaces" />
+                android:src="@drawable/ic_officers"
+                app:tint="@color/primary"
+                android:padding="20dp" />
         </com.google.android.material.card.MaterialCardView>
     </RelativeLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="-45dp"
+        android:layout_marginTop="-30dp"
         android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="24dp">
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
+                app:strokeColor="@color/card_stroke"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="24dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:id="@+id/tvProfileName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Employee Name"
-                        android:textColor="#333333"
-                        android:textSize="22sp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -78,15 +98,19 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="ID: 0000000000"
-                        android:textColor="#757575" />
+                        android:textColor="@color/text_secondary" />
 
                     <TextView
                         android:id="@+id/tvProfileRole"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="10dp"
                         android:text="Role: USER"
-                        android:textColor="#E91E63"
+                        android:background="@drawable/bg_badge_green"
+                        android:textColor="@color/badge_green_icon"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -94,9 +118,12 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                android:layout_marginBottom="20dp"
+                app:strokeColor="@color/card_stroke"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -124,12 +151,15 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:backgroundTint="#795548"
+                android:layout_height="52dp"
+                app:backgroundTint="@color/badge_red_bg"
                 android:text="Logout Account"
-                android:textColor="#FFFFFF"
-                app:cornerRadius="10dp" />
+                android:textColor="@color/badge_red_icon"
+                app:elevation="0dp"
+                app:cornerRadius="14dp"
+                android:textStyle="bold" />
 
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
+

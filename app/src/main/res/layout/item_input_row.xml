@@ -8,38 +8,41 @@
      android:paddingTop="8dp">
 
     <EditText
-         android:layout_height="wrap_content"
+         android:layout_height="46dp"
          android:layout_width="0dp"
          android:background="@drawable/bg_edittext_simple"
          android:hint="Name"
-         android:textColorHint="#9E9E9E"
+         android:textColorHint="@color/text_muted"
          android:textSize="14sp"
-         android:textColor="#000000"
+         android:textColor="@color/text_primary"
+         android:paddingHorizontal="10dp"
          android:layout_weight="4"
          android:id="@+id/etRowName" />
 
     <EditText
-         android:layout_height="wrap_content"
+         android:layout_height="46dp"
          android:layout_width="0dp"
          android:background="@drawable/bg_edittext_simple"
          android:hint="A/C No"
-         android:textColorHint="#9E9E9E"
+         android:textColorHint="@color/text_muted"
          android:textSize="14sp"
-         android:textColor="#000000"
-         android:layout_marginStart="4dp"
+         android:textColor="@color/text_primary"
+         android:paddingHorizontal="10dp"
+         android:layout_marginStart="6dp"
          android:layout_weight="3.5"
          android:inputType="number"
          android:id="@+id/etRowAc" />
 
     <EditText
-         android:layout_height="wrap_content"
+         android:layout_height="46dp"
          android:layout_width="0dp"
          android:background="@drawable/bg_edittext_simple"
          android:hint="Limit"
-         android:textColorHint="#9E9E9E"
+         android:textColorHint="@color/text_muted"
          android:textSize="14sp"
-         android:textColor="#000000"
-         android:layout_marginStart="4dp"
+         android:textColor="@color/text_primary"
+         android:paddingHorizontal="10dp"
+         android:layout_marginStart="6dp"
          android:layout_weight="2.5"
          android:inputType="number"
          android:id="@+id/etRowLimit" />

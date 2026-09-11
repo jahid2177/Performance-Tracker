@@ -4,283 +4,519 @@
      xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
-     android:background="#F5F7FA"
+     android:background="@color/background"
      android:orientation="vertical">
 
+    <!-- Top App Bar in clean screenshot style -->
     <LinearLayout
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:background="#2196F3"
+         android:background="@color/background"
          android:gravity="center_vertical"
-         android:elevation="4dp"
-         android:padding="16dp">
+         android:paddingHorizontal="20dp"
+         android:paddingTop="20dp"
+         android:paddingBottom="12dp">
 
         <TextView
              android:layout_height="wrap_content"
              android:layout_width="0dp"
-             android:textSize="20sp"
-             android:textColor="#FFFFFF"
+             android:textSize="26sp"
+             android:textColor="@color/text_primary"
              android:layout_weight="1"
              android:id="@+id/tvPageTitle"
              android:text="Dashboard"
              android:textStyle="bold" />
 
-        <ImageView
-             android:layout_height="28dp"
-             android:layout_width="28dp"
-             android:src="@android:drawable/ic_lock_power_off"
-             app:tint="#FFFFFF"
-             android:id="@+id/btnExit" />
+        <com.google.android.material.card.MaterialCardView
+             android:layout_height="40dp"
+             android:layout_width="40dp"
+             app:cardCornerRadius="20dp"
+             app:cardElevation="0dp"
+             app:strokeWidth="1dp"
+             app:strokeColor="@color/card_stroke"
+             app:cardBackgroundColor="@color/surface"
+             android:clickable="true"
+             android:focusable="true">
+
+            <ImageView
+                 android:layout_height="20dp"
+                 android:layout_width="20dp"
+                 android:layout_gravity="center"
+                 android:src="@drawable/ic_logout"
+                 app:tint="@color/text_primary"
+                 android:id="@+id/btnExit" />
+
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 
-    <LinearLayout
-         android:layout_height="wrap_content"
-         android:layout_width="match_parent"
-         android:visibility="visible"
-         android:padding="16dp"
-         android:orientation="vertical"
-         android:id="@+id/mainOptionsLayout">
-
-        <LinearLayout
-             android:layout_height="wrap_content"
-             android:layout_width="match_parent"
-             android:weightSum="2"
-             android:layout_marginBottom="12dp"
-             android:orientation="horizontal">
-
-            <com.google.android.material.card.MaterialCardView
-                 android:layout_height="100dp"
-                 android:layout_width="0dp"
-                 android:layout_marginEnd="6dp"
-                 app:cardElevation="2dp"
-                 app:cardBackgroundColor="#E3F2FD"
-                 app:cardCornerRadius="12dp"
-                 android:layout_weight="1"
-                 android:id="@+id/cardSubmission">
-
-                <TextView
-                     android:layout_height="wrap_content"
-                     android:layout_width="wrap_content"
-                     android:textColor="#1565C0"
-                     android:layout_gravity="center"
-                     android:text="NEW SUBMISSION"
-                     android:textStyle="bold" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                 android:layout_height="100dp"
-                 android:layout_width="0dp"
-                 app:cardElevation="2dp"
-                 app:cardBackgroundColor="#E8F5E9"
-                 android:layout_marginStart="6dp"
-                 app:cardCornerRadius="12dp"
-                 android:layout_weight="1"
-                 android:id="@+id/cardOfficerList">
-
-                <TextView
-                     android:layout_height="wrap_content"
-                     android:layout_width="wrap_content"
-                     android:textColor="#2E7D32"
-                     android:layout_gravity="center"
-                     android:text="OFFICER LIST"
-                     android:textStyle="bold" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-        </LinearLayout>
-
-        <LinearLayout
-             android:layout_height="wrap_content"
-             android:layout_width="match_parent"
-             android:weightSum="2"
-             android:orientation="horizontal">
-
-            <com.google.android.material.card.MaterialCardView
-                 android:layout_height="100dp"
-                 android:layout_width="0dp"
-                 android:layout_marginEnd="6dp"
-                 app:cardElevation="2dp"
-                 app:cardBackgroundColor="#FFF3E0"
-                 app:cardCornerRadius="12dp"
-                 android:layout_weight="1"
-                 android:id="@+id/cardMyReport">
-
-                <TextView
-                     android:layout_height="wrap_content"
-                     android:layout_width="wrap_content"
-                     android:textColor="#E65100"
-                     android:layout_gravity="center"
-                     android:text="MY REPORT"
-                     android:textStyle="bold" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                 android:layout_height="100dp"
-                 android:layout_width="0dp"
-                 app:cardElevation="2dp"
-                 app:cardBackgroundColor="#FCE4EC"
-                 android:layout_marginStart="6dp"
-                 app:cardCornerRadius="12dp"
-                 android:layout_weight="1"
-                 android:id="@+id/cardRanking">
-
-                <TextView
-                     android:layout_height="wrap_content"
-                     android:layout_width="wrap_content"
-                     android:textColor="#C2185B"
-                     android:layout_gravity="center"
-                     android:text="RANKING"
-                     android:textStyle="bold" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <LinearLayout
+    <ScrollView
          android:layout_height="match_parent"
          android:layout_width="match_parent"
-         android:visibility="gone"
-         android:padding="16dp"
-         android:orientation="vertical"
-         android:id="@+id/submissionFormLayout">
-
-        <TextView
-             android:layout_height="wrap_content"
-             android:layout_width="match_parent"
-             android:layout_marginBottom="8dp"
-             android:textSize="18sp"
-             android:textColor="#000000"
-             android:id="@+id/tvEmpName"
-             android:text="Welcome, Md Jahidul Islam"
-             android:textStyle="bold" />
-
-        <TextView
-             android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:textSize="16sp"
-             android:textColor="#000000"
-             android:layout_marginTop="8dp"
-             android:text="Reporting Month:"
-             android:textStyle="bold" />
-
-        <Spinner
-             android:layout_height="50dp"
-             android:layout_width="match_parent"
-             android:background="@drawable/bg_edittext_simple"
-             android:backgroundTint="#000000"
-             android:layout_marginTop="4dp"
-             android:id="@+id/spinnerMonth">
-
-        </Spinner>
+         android:fillViewport="true">
 
         <LinearLayout
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
-             android:orientation="horizontal"
-             android:layout_marginTop="16dp"
-             android:paddingHorizontal="4dp">
+             android:orientation="vertical">
 
-            <TextView
-                 android:layout_height="wrap_content"
-                 android:layout_width="0dp"
-                 android:textSize="14sp"
-                 android:textColor="#000000"
-                 android:layout_weight="1"
-                 android:text="Name"
-                 android:textStyle="bold" />
-
-            <TextView
-                 android:layout_height="wrap_content"
-                 android:layout_width="0dp"
-                 android:textSize="14sp"
-                 android:textColor="#000000"
-                 android:layout_weight="1"
-                 android:text="A/C No"
-                 android:textStyle="bold" />
-
-            <TextView
-                 android:layout_height="wrap_content"
-                 android:layout_width="0dp"
-                 android:gravity="center_horizontal"
-                 android:textSize="14sp"
-                 android:textColor="#000000"
-                 android:layout_weight="1"
-                 android:text="Limit"
-                 android:textStyle="bold" />
-
-        </LinearLayout>
-
-        <ScrollView
-             android:layout_height="0dp"
-             android:layout_width="match_parent"
-             android:layout_marginTop="8dp"
-             android:layout_weight="1">
-
+            <!-- Main Options styled exactly like screenshot -->
             <LinearLayout
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
+                 android:visibility="visible"
+                 android:paddingHorizontal="16dp"
+                 android:paddingBottom="20dp"
                  android:orientation="vertical"
-                 android:id="@+id/rowsContainer">
+                 android:id="@+id/mainOptionsLayout">
+
+                <!-- Section: ACTIONS -->
+                <TextView
+                     style="@style/SectionHeader"
+                     android:text="ACTIONS" />
+
+                <!-- Card Group 1 -->
+                <com.google.android.material.card.MaterialCardView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     app:cardElevation="0dp"
+                     app:strokeColor="@color/card_stroke"
+                     app:strokeWidth="1dp"
+                     app:cardBackgroundColor="@color/surface_card"
+                     app:cardCornerRadius="18dp">
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="vertical">
+
+                        <!-- Option: New Submission -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:clickable="true"
+                             android:focusable="true"
+                             android:background="?attr/selectableItemBackground"
+                             android:padding="16dp"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal"
+                             android:id="@+id/cardSubmission">
+
+                            <!-- Mint Green Badge -->
+                            <FrameLayout
+                                 android:layout_height="44dp"
+                                 android:layout_width="44dp"
+                                 android:background="@drawable/bg_badge_green">
+
+                                <ImageView
+                                     android:layout_height="22dp"
+                                     android:layout_width="22dp"
+                                     android:layout_gravity="center"
+                                     android:src="@drawable/ic_submission"
+                                     app:tint="@color/badge_green_icon" />
+
+                            </FrameLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_marginStart="14dp"
+                                 android:layout_weight="1"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="16sp"
+                                     android:textColor="@color/text_primary"
+                                     android:text="New Submission"
+                                     android:textStyle="bold" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="13sp"
+                                     android:layout_marginTop="2dp"
+                                     android:textColor="@color/text_secondary"
+                                     android:text="Submit monthly performance report" />
+
+                            </LinearLayout>
+
+                            <ImageView
+                                 android:layout_height="20dp"
+                                 android:layout_width="20dp"
+                                 android:src="@drawable/ic_chevron_right"
+                                 app:tint="@color/chevron_color" />
+
+                        </LinearLayout>
+
+                        <!-- Subtle Divider -->
+                        <View
+                             android:layout_height="1dp"
+                             android:layout_width="match_parent"
+                             android:layout_marginStart="72dp"
+                             android:background="@color/divider_color" />
+
+                        <!-- Option: Officer List -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:clickable="true"
+                             android:focusable="true"
+                             android:background="?attr/selectableItemBackground"
+                             android:padding="16dp"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal"
+                             android:id="@+id/cardOfficerList">
+
+                            <!-- Soft Blue Badge -->
+                            <FrameLayout
+                                 android:layout_height="44dp"
+                                 android:layout_width="44dp"
+                                 android:background="@drawable/bg_badge_blue">
+
+                                <ImageView
+                                     android:layout_height="22dp"
+                                     android:layout_width="22dp"
+                                     android:layout_gravity="center"
+                                     android:src="@drawable/ic_officers"
+                                     app:tint="@color/badge_blue_icon" />
+
+                            </FrameLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_marginStart="14dp"
+                                 android:layout_weight="1"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="16sp"
+                                     android:textColor="@color/text_primary"
+                                     android:text="Officer List"
+                                     android:textStyle="bold" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="13sp"
+                                     android:layout_marginTop="2dp"
+                                     android:textColor="@color/text_secondary"
+                                     android:text="View approved team officers" />
+
+                            </LinearLayout>
+
+                            <ImageView
+                                 android:layout_height="20dp"
+                                 android:layout_width="20dp"
+                                 android:src="@drawable/ic_chevron_right"
+                                 app:tint="@color/chevron_color" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section: REPORTS & EVALUATION -->
+                <TextView
+                     style="@style/SectionHeader"
+                     android:layout_marginTop="24dp"
+                     android:text="REPORTS &amp; EVALUATION" />
+
+                <!-- Card Group 2 -->
+                <com.google.android.material.card.MaterialCardView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     app:cardElevation="0dp"
+                     app:strokeColor="@color/card_stroke"
+                     app:strokeWidth="1dp"
+                     app:cardBackgroundColor="@color/surface_card"
+                     app:cardCornerRadius="18dp">
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="vertical">
+
+                        <!-- Option: My Report -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:clickable="true"
+                             android:focusable="true"
+                             android:background="?attr/selectableItemBackground"
+                             android:padding="16dp"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal"
+                             android:id="@+id/cardMyReport">
+
+                            <!-- Mint/Sage Badge -->
+                            <FrameLayout
+                                 android:layout_height="44dp"
+                                 android:layout_width="44dp"
+                                 android:background="@drawable/bg_badge_mint">
+
+                                <ImageView
+                                     android:layout_height="22dp"
+                                     android:layout_width="22dp"
+                                     android:layout_gravity="center"
+                                     android:src="@drawable/ic_report"
+                                     app:tint="@color/badge_mint_icon" />
+
+                            </FrameLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_marginStart="14dp"
+                                 android:layout_weight="1"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="16sp"
+                                     android:textColor="@color/text_primary"
+                                     android:text="My Report"
+                                     android:textStyle="bold" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="13sp"
+                                     android:layout_marginTop="2dp"
+                                     android:textColor="@color/text_secondary"
+                                     android:text="Review your submitted reports" />
+
+                            </LinearLayout>
+
+                            <ImageView
+                                 android:layout_height="20dp"
+                                 android:layout_width="20dp"
+                                 android:src="@drawable/ic_chevron_right"
+                                 app:tint="@color/chevron_color" />
+
+                        </LinearLayout>
+
+                        <!-- Subtle Divider -->
+                        <View
+                             android:layout_height="1dp"
+                             android:layout_width="match_parent"
+                             android:layout_marginStart="72dp"
+                             android:background="@color/divider_color" />
+
+                        <!-- Option: Ranking -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:clickable="true"
+                             android:focusable="true"
+                             android:background="?attr/selectableItemBackground"
+                             android:padding="16dp"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal"
+                             android:id="@+id/cardRanking">
+
+                            <!-- Amber/Peach Badge -->
+                            <FrameLayout
+                                 android:layout_height="44dp"
+                                 android:layout_width="44dp"
+                                 android:background="@drawable/bg_badge_amber">
+
+                                <ImageView
+                                     android:layout_height="22dp"
+                                     android:layout_width="22dp"
+                                     android:layout_gravity="center"
+                                     android:src="@drawable/ic_ranking"
+                                     app:tint="@color/badge_amber_icon" />
+
+                            </FrameLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_marginStart="14dp"
+                                 android:layout_weight="1"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="16sp"
+                                     android:textColor="@color/text_primary"
+                                     android:text="Ranking"
+                                     android:textStyle="bold" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="13sp"
+                                     android:layout_marginTop="2dp"
+                                     android:textColor="@color/text_secondary"
+                                     android:text="Top performers leaderboard" />
+
+                            </LinearLayout>
+
+                            <ImageView
+                                 android:layout_height="20dp"
+                                 android:layout_width="20dp"
+                                 android:src="@drawable/ic_chevron_right"
+                                 app:tint="@color/chevron_color" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
 
-        </ScrollView>
+            <!-- Form Layout (When New Submission is clicked) -->
+            <LinearLayout
+                 android:layout_height="match_parent"
+                 android:layout_width="match_parent"
+                 android:visibility="gone"
+                 android:padding="16dp"
+                 android:orientation="vertical"
+                 android:id="@+id/submissionFormLayout">
 
-        <Button
-             android:layout_height="55dp"
-             android:layout_width="match_parent"
-             app:cornerRadius="8dp"
-             android:backgroundTint="#4CAF50"
-             android:layout_marginTop="8dp"
-             android:id="@+id/btnAddMore"
-             android:text="Add More Row"
-             android:textStyle="bold" />
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="12dp"
+                     android:textSize="18sp"
+                     android:textColor="@color/text_primary"
+                     android:id="@+id/tvEmpName"
+                     android:text="Welcome, Md Jahidul Islam"
+                     android:textStyle="bold" />
 
-        <com.google.android.material.checkbox.MaterialCheckBox
-             android:layout_height="wrap_content"
-             android:layout_width="match_parent"
-             android:textColor="#000000"
-             app:buttonTint="#F44336"
-             android:layout_marginTop="4dp"
-             android:id="@+id/cbZeroApproval"
-             android:text="Zero approval this month"
-             android:textStyle="bold" />
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="14sp"
+                     android:textColor="@color/text_secondary"
+                     android:text="Reporting Month:"
+                     android:textStyle="bold" />
 
-        <LinearLayout
-             android:layout_height="wrap_content"
-             android:layout_width="match_parent"
-             android:weightSum="2"
-             android:orientation="horizontal"
-             android:layout_marginTop="12dp">
+                <Spinner
+                     android:layout_height="50dp"
+                     android:layout_width="match_parent"
+                     android:background="@drawable/bg_edittext_simple"
+                     android:layout_marginTop="6dp"
+                     android:id="@+id/spinnerMonth" />
 
-            <Button
-                 android:layout_height="55dp"
-                 android:layout_width="0dp"
-                 android:layout_marginEnd="6dp"
-                 app:cornerRadius="8dp"
-                 android:backgroundTint="#607D8B"
-                 android:layout_weight="1"
-                 android:id="@+id/btnBackToHome"
-                 android:text="Back"
-                 android:textStyle="bold" />
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:orientation="horizontal"
+                     android:layout_marginTop="16dp"
+                     android:paddingHorizontal="4dp">
 
-            <Button
-                 android:layout_height="55dp"
-                 android:layout_width="0dp"
-                 app:cornerRadius="8dp"
-                 android:backgroundTint="#2196F3"
-                 android:layout_weight="1"
-                 android:id="@+id/btnSubmit"
-                 android:text="Submit"
-                 android:textStyle="bold" />
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="0dp"
+                         android:textSize="14sp"
+                         android:textColor="@color/text_primary"
+                         android:layout_weight="1"
+                         android:text="Name"
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="0dp"
+                         android:textSize="14sp"
+                         android:textColor="@color/text_primary"
+                         android:layout_weight="1"
+                         android:text="A/C No"
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:layout_height="wrap_content"
+                         android:layout_width="0dp"
+                         android:gravity="center_horizontal"
+                         android:textSize="14sp"
+                         android:textColor="@color/text_primary"
+                         android:layout_weight="1"
+                         android:text="Limit"
+                         android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <ScrollView
+                     android:layout_height="0dp"
+                     android:layout_width="match_parent"
+                     android:layout_marginTop="8dp"
+                     android:layout_weight="1">
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="vertical"
+                         android:id="@+id/rowsContainer" />
+
+                </ScrollView>
+
+                <Button
+                     android:layout_height="52dp"
+                     android:layout_width="match_parent"
+                     app:cornerRadius="14dp"
+                     android:backgroundTint="@color/primary"
+                     android:textColor="@color/white"
+                     android:layout_marginTop="8dp"
+                     android:id="@+id/btnAddMore"
+                     android:text="Add More Row"
+                     android:textStyle="bold" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:textColor="@color/text_primary"
+                     app:buttonTint="@color/badge_red_icon"
+                     android:layout_marginTop="6dp"
+                     android:id="@+id/cbZeroApproval"
+                     android:text="Zero approval this month"
+                     android:textStyle="bold" />
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:weightSum="2"
+                     android:orientation="horizontal"
+                     android:layout_marginTop="14dp">
+
+                    <Button
+                         android:layout_height="52dp"
+                         android:layout_width="0dp"
+                         android:layout_marginEnd="6dp"
+                         app:cornerRadius="14dp"
+                         android:backgroundTint="@color/badge_grey_bg"
+                         android:textColor="@color/text_primary"
+                         android:layout_weight="1"
+                         android:id="@+id/btnBackToHome"
+                         android:text="Back"
+                         android:textStyle="bold" />
+
+                    <Button
+                         android:layout_height="52dp"
+                         android:layout_width="0dp"
+                         app:cornerRadius="14dp"
+                         android:backgroundTint="@color/primary"
+                         android:textColor="@color/white"
+                         android:layout_weight="1"
+                         android:id="@+id/btnSubmit"
+                         android:text="Submit"
+                         android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>

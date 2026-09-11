@@ -4,12 +4,14 @@
      xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="wrap_content"
      android:layout_width="match_parent"
-     android:layout_marginVertical="6dp"
+     android:layout_marginVertical="5dp"
      android:clickable="true"
      android:layout_marginHorizontal="16dp"
-     app:cardElevation="2dp"
-     app:cardBackgroundColor="#FFFFFF"
-     app:cardCornerRadius="12dp"
+     app:cardElevation="0dp"
+     app:strokeColor="@color/card_stroke"
+     app:strokeWidth="1dp"
+     app:cardBackgroundColor="@color/surface_card"
+     app:cardCornerRadius="18dp"
      android:focusable="true"
      android:foreground="?attr/selectableItemBackground">
 
@@ -30,7 +32,7 @@
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
                  android:textSize="16sp"
-                 android:textColor="#2196F3"
+                 android:textColor="@color/text_primary"
                  android:id="@+id/tvUserName"
                  android:text="Name: Md Jahidul Islam"
                  android:textStyle="bold" />
@@ -45,11 +47,11 @@
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:background="#E0F2F1"
+                     android:background="@drawable/bg_badge_mint"
                      android:paddingVertical="4dp"
                      android:textSize="12sp"
-                     android:textColor="#009688"
-                     android:paddingHorizontal="8dp"
+                     android:textColor="@color/badge_mint_icon"
+                     android:paddingHorizontal="10dp"
                      android:id="@+id/tvMonth"
                      android:text="February"
                      android:textStyle="bold" />
@@ -58,7 +60,7 @@
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
                      android:textSize="12sp"
-                     android:textColor="#9E9E9E"
+                     android:textColor="@color/text_muted"
                      android:layout_marginStart="8dp"
                      android:id="@+id/tvDate"
                      android:text="Submitted: 23 Feb 2026" />
@@ -67,24 +69,44 @@
 
         </LinearLayout>
 
-        <ImageView
-             android:layout_height="32dp"
-             android:layout_width="32dp"
-             android:src="@android:drawable/ic_menu_edit"
-             android:background="?attr/selectableItemBackgroundBorderless"
-             app:tint="#4CAF50"
-             android:padding="4dp"
-             android:id="@+id/btnEdit" />
+        <com.google.android.material.card.MaterialCardView
+             android:layout_height="36dp"
+             android:layout_width="36dp"
+             app:cardElevation="0dp"
+             app:cardBackgroundColor="@color/badge_green_bg"
+             app:cardCornerRadius="18dp"
+             android:clickable="true"
+             android:focusable="true">
 
-        <ImageView
-             android:layout_height="32dp"
-             android:layout_width="32dp"
-             android:src="@android:drawable/ic_menu_delete"
-             android:background="?attr/selectableItemBackgroundBorderless"
-             app:tint="#F44336"
-             android:padding="4dp"
-             android:layout_marginStart="12dp"
-             android:id="@+id/btnDelete" />
+            <ImageView
+                 android:layout_height="18dp"
+                 android:layout_width="18dp"
+                 android:layout_gravity="center"
+                 android:src="@android:drawable/ic_menu_edit"
+                 app:tint="@color/badge_green_icon"
+                 android:id="@+id/btnEdit" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+             android:layout_height="36dp"
+             android:layout_width="36dp"
+             app:cardElevation="0dp"
+             app:cardBackgroundColor="@color/badge_red_bg"
+             app:cardCornerRadius="18dp"
+             android:layout_marginStart="8dp"
+             android:clickable="true"
+             android:focusable="true">
+
+            <ImageView
+                 android:layout_height="18dp"
+                 android:layout_width="18dp"
+                 android:layout_gravity="center"
+                 android:src="@android:drawable/ic_menu_delete"
+                 app:tint="@color/badge_red_icon"
+                 android:id="@+id/btnDelete" />
+
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

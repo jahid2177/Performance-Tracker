@@ -1,6 +1,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <style name="Base.AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
-  </style>
-
-  <style name="AppTheme" parent="Base.AppTheme" />
+    <style name="Theme.PerformanceTracker" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorControlNormal">@color/input_stroke_unfocused</item>
+        <item name="colorControlActivated">@color/primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="textInputStyle">@style/CustomOutlinedBox</item>
+    </style>
 </resources>

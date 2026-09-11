@@ -1,37 +1,48 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
     id 'com.google.gms.google-services'
 }
 
 android {
     namespace 'com.performance.tracker'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.performance.tracker"
         minSdk 24
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // 🔥 কনফ্লিক্ট হওয়া সব ফাইল একবারে হ্যান্ডেল করার জন্য পূর্ণাঙ্গ সলিউশন
-    packagingOptions {
+    signingConfigs {
+        debug {
+            storeFile file("${rootDir}/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    packaging {
         resources {
-            // ডুপ্লিকেট পাওয়া গেলে প্রথমটি গ্রহণ করবে
             pickFirsts += 'META-INF/MPL-2.0.txt'
             pickFirsts += 'META-INF/LGPL-2.1.txt'
             pickFirsts += 'META-INF/LGPL-2.1.md'
-            pickFirsts += 'META-INF/LICENSES.md' // এই লাইনটি আপনার এরর ফিক্স করবে
+            pickFirsts += 'META-INF/LICENSES.md'
             pickFirsts += 'META-INF/LICENSE.md'
             pickFirsts += 'META-INF/NOTICE.md'
             pickFirsts += 'META-INF/LICENSE'
             pickFirsts += 'META-INF/NOTICE'
             
-            // অপ্রয়োজনীয় ফাইলগুলো বিল্ড থেকে বাদ দেওয়া হবে
             excludes += 'META-INF/DEPENDENCIES'
             excludes += 'META-INF/LICENSE.txt'
             excludes += 'META-INF/NOTICE.txt'
@@ -45,12 +56,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = '1.8'
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 

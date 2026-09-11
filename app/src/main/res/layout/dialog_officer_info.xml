@@ -5,43 +5,44 @@
      android:layout_height="wrap_content"
      android:layout_width="match_parent"
      android:layout_margin="16dp"
-     app:cardElevation="8dp"
-     app:cardCornerRadius="16dp">
+     app:cardElevation="0dp"
+     app:strokeColor="@color/card_stroke"
+     app:strokeWidth="1dp"
+     app:cardBackgroundColor="@color/surface"
+     app:cardCornerRadius="20dp">
 
     <LinearLayout
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:background="#FFFFFF"
+         android:background="@color/surface"
          android:orientation="vertical">
 
         <LinearLayout
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
-             android:background="#0D47A1"
+             android:background="@color/primary"
              android:gravity="center"
              android:paddingVertical="24dp"
              android:orientation="vertical"
-             android:paddingHorizontal="16dp">
-
-            <TextView
-                 android:layout_height="wrap_content"
-                 android:layout_width="wrap_content"
-                 android:textSize="28sp"
-                 android:fontFamily="sans-serif-condensed"
-                 android:textColor="#FFFFFF"
-                 android:text="Officer Information"
-                 android:textStyle="italic|bold" />
+             android:paddingHorizontal="20dp">
 
             <TextView
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
                  android:textSize="22sp"
-                 android:fontFamily="sans-serif-condensed"
                  android:textColor="#FFFFFF"
-                 android:layout_marginTop="16dp"
+                 android:text="Officer Information"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="18sp"
+                 android:textColor="#FFFFFF"
+                 android:layout_marginTop="10dp"
                  android:id="@+id/tvInfoName"
                  android:text="Name: Md Jahidul Islam"
-                 android:textStyle="italic|bold" />
+                 android:textStyle="bold" />
 
         </LinearLayout>
 
@@ -54,22 +55,20 @@
             <TableRow
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
-                 android:layout_marginBottom="8dp">
+                 android:layout_marginBottom="12dp">
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="15sp"
+                     android:textColor="@color/text_secondary"
                      android:text="Employee ID" />
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="16sp"
+                     android:textColor="@color/text_primary"
                      android:paddingStart="16dp"
                      android:id="@+id/tvInfoId"
                      android:text=": 202429021688"
@@ -80,50 +79,48 @@
             <TableRow
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
-                 android:layout_marginBottom="8dp">
+                 android:layout_marginBottom="12dp">
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="15sp"
+                     android:textColor="@color/text_secondary"
                      android:text="Zone" />
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="16sp"
+                     android:textColor="@color/text_primary"
                      android:paddingStart="16dp"
                      android:id="@+id/tvInfoZone"
-                     android:text=": KHULNA" />
+                     android:text=": KHULNA"
+                     android:textStyle="bold" />
 
             </TableRow>
 
             <TableRow
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
-                 android:layout_marginBottom="8dp">
+                 android:layout_marginBottom="12dp">
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="15sp"
+                     android:textColor="@color/text_secondary"
                      android:text="Mobile" />
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="16sp"
+                     android:textColor="@color/text_primary"
                      android:paddingStart="16dp"
                      android:id="@+id/tvInfoMobile"
-                     android:text=": 01686556444" />
+                     android:text=": 01686556444"
+                     android:textStyle="bold" />
 
             </TableRow>
 
@@ -134,29 +131,28 @@
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="15sp"
+                     android:textColor="@color/text_secondary"
                      android:text="Branch" />
 
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="18sp"
-                     android:fontFamily="serif"
-                     android:textColor="#000000"
+                     android:textSize="16sp"
+                     android:textColor="@color/text_primary"
                      android:paddingStart="16dp"
                      android:id="@+id/tvInfoBranch"
-                     android:text=": Mirerdanga" />
+                     android:text=": Mirerdanga"
+                     android:textStyle="bold" />
 
             </TableRow>
 
         </TableLayout>
 
         <View
-             android:layout_height="16dp"
+             android:layout_height="6dp"
              android:layout_width="match_parent"
-             android:background="#4CAF50" />
+             android:background="@color/primary" />
 
     </LinearLayout>
 

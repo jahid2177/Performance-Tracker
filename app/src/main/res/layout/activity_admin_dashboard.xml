@@ -4,35 +4,51 @@
      xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
-     android:background="#F5F7FA"
+     android:background="@color/background"
      android:orientation="vertical">
 
-    <RelativeLayout
-         android:layout_height="60dp"
+    <!-- Top App Bar matching screenshot aesthetic -->
+    <LinearLayout
+         android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:background="#2196F3"
-         android:paddingHorizontal="16dp">
+         android:background="@color/background"
+         android:gravity="center_vertical"
+         android:paddingHorizontal="20dp"
+         android:paddingTop="20dp"
+         android:paddingBottom="12dp">
 
         <TextView
              android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:layout_centerVertical="true"
-             android:textSize="20sp"
-             android:textColor="#FFFFFF"
+             android:layout_width="0dp"
+             android:textSize="24sp"
+             android:textColor="@color/text_primary"
+             android:layout_weight="1"
              android:id="@+id/tvHeaderTitle"
              android:text="Control Panel"
              android:textStyle="bold" />
 
-        <ImageView
-             android:layout_height="30dp"
-             android:layout_width="30dp"
-             android:src="@android:drawable/ic_lock_power_off"
-             android:layout_centerVertical="true"
-             app:tint="#FFFFFF"
-             android:layout_alignParentEnd="true"
-             android:id="@+id/btnTopAction" />
+        <com.google.android.material.card.MaterialCardView
+             android:layout_height="40dp"
+             android:layout_width="40dp"
+             app:cardCornerRadius="20dp"
+             app:cardElevation="0dp"
+             app:strokeWidth="1dp"
+             app:strokeColor="@color/card_stroke"
+             app:cardBackgroundColor="@color/surface"
+             android:clickable="true"
+             android:focusable="true">
 
-    </RelativeLayout>
+            <ImageView
+                 android:layout_height="20dp"
+                 android:layout_width="20dp"
+                 android:layout_gravity="center"
+                 android:src="@drawable/ic_logout"
+                 app:tint="@color/text_primary"
+                 android:id="@+id/btnTopAction" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
 
     <ScrollView
          android:layout_height="match_parent"
@@ -42,7 +58,8 @@
         <LinearLayout
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
-             android:padding="16dp"
+             android:paddingHorizontal="16dp"
+             android:paddingBottom="24dp"
              android:orientation="vertical">
 
             <LinearLayout
@@ -51,14 +68,10 @@
                  android:orientation="vertical"
                  android:id="@+id/optionsLayout">
 
+                <!-- Main Actions Section -->
                 <TextView
-                     android:layout_height="wrap_content"
-                     android:layout_width="match_parent"
-                     android:layout_marginBottom="8dp"
-                     android:textSize="16sp"
-                     android:textColor="#333333"
-                     android:text="Main Actions"
-                     android:textStyle="bold" />
+                     style="@style/SectionHeader"
+                     android:text="MAIN ACTIONS" />
 
                 <LinearLayout
                      android:layout_height="wrap_content"
@@ -68,73 +81,77 @@
                      android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
-                         android:layout_height="55dp"
+                         android:layout_height="52dp"
                          android:layout_width="0dp"
                          android:layout_marginEnd="6dp"
-                         app:backgroundTint="#2196F3"
-                         app:cornerRadius="10dp"
-                         android:textColor="#FFFFFF"
+                         app:backgroundTint="@color/badge_green_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_green_icon"
                          android:layout_weight="1"
                          android:id="@+id/btnFilterMonthWise"
-                         android:text="Month" />
+                         android:text="Month"
+                         android:textStyle="bold" />
 
                     <com.google.android.material.button.MaterialButton
-                         android:layout_height="55dp"
+                         android:layout_height="52dp"
                          android:layout_width="0dp"
-                         app:backgroundTint="#3F51B5"
-                         app:cornerRadius="10dp"
-                         android:textColor="#FFFFFF"
+                         app:backgroundTint="@color/badge_blue_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_blue_icon"
                          android:layout_marginStart="6dp"
                          android:layout_weight="1"
                          android:id="@+id/btnFilterIndividual"
-                         android:text="Individual" />
+                         android:text="Individual"
+                         android:textStyle="bold" />
 
                 </LinearLayout>
 
                 <LinearLayout
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
-                     android:layout_marginBottom="20dp"
+                     android:layout_marginBottom="16dp"
                      android:weightSum="2"
                      android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
-                         android:layout_height="55dp"
+                         android:layout_height="52dp"
                          android:layout_width="0dp"
                          android:layout_marginEnd="6dp"
-                         app:backgroundTint="#F44336"
-                         app:cornerRadius="10dp"
-                         android:textColor="#FFFFFF"
+                         app:backgroundTint="@color/badge_red_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_red_icon"
                          android:layout_weight="1"
                          android:id="@+id/btnWhoNotSubmitted"
-                         android:text="Not Submitted" />
+                         android:text="Not Submitted"
+                         android:textStyle="bold" />
 
                     <com.google.android.material.button.MaterialButton
-                         android:layout_height="55dp"
+                         android:layout_height="52dp"
                          android:layout_width="0dp"
-                         app:backgroundTint="#4CAF50"
-                         app:cornerRadius="10dp"
-                         android:textColor="#FFFFFF"
+                         app:backgroundTint="@color/badge_mint_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_mint_icon"
                          android:layout_marginStart="6dp"
                          android:layout_weight="1"
                          android:id="@+id/btnDownloadExcel"
-                         android:text="Export Report" />
+                         android:text="Export Report"
+                         android:textStyle="bold" />
 
                 </LinearLayout>
 
+                <!-- Filters & Ranking Section -->
                 <TextView
-                     android:layout_height="wrap_content"
-                     android:layout_width="match_parent"
-                     android:layout_marginBottom="8dp"
-                     android:textSize="16sp"
-                     android:textColor="#333333"
-                     android:text="Filters &amp; Ranking"
-                     android:textStyle="bold" />
+                     style="@style/SectionHeader"
+                     android:text="FILTERS &amp; RANKING" />
 
                 <HorizontalScrollView
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
-                     android:layout_marginBottom="20dp"
+                     android:layout_marginBottom="16dp"
                      android:scrollbars="none">
 
                     <LinearLayout
@@ -143,54 +160,64 @@
                          android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="50dp"
+                             android:layout_height="46dp"
                              android:layout_width="wrap_content"
-                             android:layout_marginEnd="10dp"
-                             app:backgroundTint="#FFC107"
+                             android:layout_marginEnd="8dp"
+                             app:backgroundTint="@color/badge_amber_bg"
                              app:cornerRadius="12dp"
-                             android:textColor="#000000"
+                             app:elevation="0dp"
+                             android:textColor="@color/badge_amber_icon"
                              android:id="@+id/btnFilterRanking"
-                             android:text="Ranking" />
+                             android:text="Ranking"
+                             android:textStyle="bold" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="50dp"
+                             android:layout_height="46dp"
                              android:layout_width="wrap_content"
-                             android:layout_marginEnd="10dp"
-                             app:backgroundTint="#9C27B0"
+                             android:layout_marginEnd="8dp"
+                             app:backgroundTint="@color/badge_blue_bg"
                              app:cornerRadius="12dp"
-                             android:textColor="#FFFFFF"
+                             app:elevation="0dp"
+                             android:textColor="@color/badge_blue_icon"
                              android:id="@+id/btnOfficerList"
-                             android:text="Officer List" />
+                             android:text="Officer List"
+                             android:textStyle="bold" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="50dp"
+                             android:layout_height="46dp"
                              android:layout_width="wrap_content"
-                             android:layout_marginEnd="10dp"
-                             app:backgroundTint="#FF9800"
+                             android:layout_marginEnd="8dp"
+                             app:backgroundTint="@color/badge_green_bg"
                              app:cornerRadius="12dp"
-                             android:textColor="#FFFFFF"
+                             app:elevation="0dp"
+                             android:textColor="@color/badge_green_icon"
                              android:id="@+id/btnApproval"
-                             android:text="Approval List" />
+                             android:text="Approval List"
+                             android:textStyle="bold" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="50dp"
+                             android:layout_height="46dp"
                              android:layout_width="wrap_content"
-                             android:layout_marginEnd="10dp"
-                             app:backgroundTint="#607D8B"
+                             android:layout_marginEnd="8dp"
+                             app:backgroundTint="@color/badge_grey_bg"
                              app:cornerRadius="12dp"
-                             android:textColor="#FFFFFF"
+                             app:elevation="0dp"
+                             android:textColor="@color/badge_grey_icon"
                              android:id="@+id/btnFilterZone"
-                             android:text="Zone" />
+                             android:text="Zone"
+                             android:textStyle="bold" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="50dp"
+                             android:layout_height="46dp"
                              android:layout_width="wrap_content"
                              android:layout_marginEnd="4dp"
-                             app:backgroundTint="#009688"
+                             app:backgroundTint="@color/badge_mint_bg"
                              app:cornerRadius="12dp"
-                             android:textColor="#FFFFFF"
+                             app:elevation="0dp"
+                             android:textColor="@color/badge_mint_icon"
                              android:id="@+id/btnFilterTeam"
-                             android:text="Manager Team" />
+                             android:text="Manager Team"
+                             android:textStyle="bold" />
 
                     </LinearLayout>
 
@@ -202,7 +229,7 @@
                  android:layout_height="1dp"
                  android:layout_width="match_parent"
                  android:layout_marginBottom="16dp"
-                 android:background="#D1D9E6" />
+                 android:background="@color/divider_color" />
 
             <RelativeLayout
                  android:layout_height="wrap_content"
@@ -213,18 +240,18 @@
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
                      android:layout_centerVertical="true"
-                     android:textSize="18sp"
-                     android:textColor="#333333"
+                     android:textSize="17sp"
+                     android:textColor="@color/text_primary"
                      android:id="@+id/tvFilterStatus"
                      android:text="Dashboard: 0 cards"
                      android:textStyle="bold" />
 
                 <ImageView
-                     android:layout_height="32dp"
-                     android:layout_width="32dp"
+                     android:layout_height="28dp"
+                     android:layout_width="28dp"
                      android:src="@android:drawable/ic_popup_sync"
                      android:layout_centerVertical="true"
-                     app:tint="#2196F3"
+                     app:tint="@color/primary"
                      android:layout_alignParentEnd="true"
                      android:id="@+id/btnRefresh" />
 

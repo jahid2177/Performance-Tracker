@@ -4,7 +4,7 @@
      xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
-     android:background="#F5F7FA"
+     android:background="@color/background"
      android:padding="20dp">
 
     <LinearLayout
@@ -17,8 +17,8 @@
              android:layout_width="match_parent"
              android:layout_marginBottom="24dp"
              android:gravity="center"
-             android:textSize="28sp"
-             android:textColor="#2196F3"
+             android:textSize="26sp"
+             android:textColor="@color/primary"
              android:text="Create Account"
              android:textStyle="bold" />
 
@@ -27,13 +27,24 @@
              android:layout_width="match_parent"
              android:layout_marginBottom="16dp"
              android:hint="Select Role"
-             app:boxStrokeColor="#2196F3"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
              style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
             <AutoCompleteTextView
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
-                 android:textColor="#333333"
+                 android:textColor="@color/text_primary"
+                 android:paddingVertical="14dp"
                  android:inputType="none"
                  android:id="@+id/autoCompleteRole"
                  android:textStyle="bold" />
@@ -45,7 +56,17 @@
              android:layout_width="match_parent"
              android:layout_marginBottom="12dp"
              android:hint="Employee ID (12 digits)"
-             app:boxStrokeColor="#2196F3"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
              style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -53,6 +74,9 @@
                  android:layout_width="match_parent"
                  android:maxLength="12"
                  android:inputType="number"
+                 android:paddingVertical="14dp"
+                 android:textColor="@color/text_primary"
+                 android:textColorHint="@color/text_secondary"
                  android:id="@+id/etRegId" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -62,13 +86,26 @@
              android:layout_width="match_parent"
              android:layout_marginBottom="12dp"
              android:hint="Full Name"
-             app:boxStrokeColor="#2196F3"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
              style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:inputType="textPersonName"
+                 android:paddingVertical="14dp"
+                 android:textColor="@color/text_primary"
+                 android:textColorHint="@color/text_secondary"
                  android:id="@+id/etRegName" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -78,13 +115,26 @@
              android:layout_width="match_parent"
              android:layout_marginBottom="12dp"
              android:hint="Mobile Number"
-             app:boxStrokeColor="#2196F3"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
              style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:inputType="phone"
+                 android:paddingVertical="14dp"
+                 android:textColor="@color/text_primary"
+                 android:textColorHint="@color/text_secondary"
                  android:id="@+id/etMobile" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -100,13 +150,26 @@
                  android:layout_width="match_parent"
                  android:layout_marginBottom="12dp"
                  android:hint="Branch Name"
-                 app:boxStrokeColor="#2196F3"
+                 app:boxBackgroundMode="outline"
+                 app:boxBackgroundColor="@color/input_background"
+                 app:boxStrokeColor="@color/box_stroke_selector"
+                 app:boxStrokeWidth="1.5dp"
+                 app:boxStrokeWidthFocused="2dp"
+                 app:hintTextColor="@color/primary"
+                 android:textColorHint="@color/text_secondary"
+                 app:boxCornerRadiusBottomEnd="12dp"
+                 app:boxCornerRadiusBottomStart="12dp"
+                 app:boxCornerRadiusTopEnd="12dp"
+                 app:boxCornerRadiusTopStart="12dp"
                  style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:inputType="text"
+                     android:paddingVertical="14dp"
+                     android:textColor="@color/text_primary"
+                     android:textColorHint="@color/text_secondary"
                      android:id="@+id/etRegBranch" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -116,13 +179,26 @@
                  android:layout_width="match_parent"
                  android:layout_marginBottom="12dp"
                  android:hint="Zone Name"
-                 app:boxStrokeColor="#2196F3"
+                 app:boxBackgroundMode="outline"
+                 app:boxBackgroundColor="@color/input_background"
+                 app:boxStrokeColor="@color/box_stroke_selector"
+                 app:boxStrokeWidth="1.5dp"
+                 app:boxStrokeWidthFocused="2dp"
+                 app:hintTextColor="@color/primary"
+                 android:textColorHint="@color/text_secondary"
+                 app:boxCornerRadiusBottomEnd="12dp"
+                 app:boxCornerRadiusBottomStart="12dp"
+                 app:boxCornerRadiusTopEnd="12dp"
+                 app:boxCornerRadiusTopStart="12dp"
                  style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:inputType="text"
+                     android:paddingVertical="14dp"
+                     android:textColor="@color/text_primary"
+                     android:textColorHint="@color/text_secondary"
                      android:id="@+id/etRegZone" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -132,13 +208,26 @@
                  android:layout_width="match_parent"
                  android:layout_marginBottom="12dp"
                  android:hint="Sales Manager Name"
-                 app:boxStrokeColor="#2196F3"
+                 app:boxBackgroundMode="outline"
+                 app:boxBackgroundColor="@color/input_background"
+                 app:boxStrokeColor="@color/box_stroke_selector"
+                 app:boxStrokeWidth="1.5dp"
+                 app:boxStrokeWidthFocused="2dp"
+                 app:hintTextColor="@color/primary"
+                 android:textColorHint="@color/text_secondary"
+                 app:boxCornerRadiusBottomEnd="12dp"
+                 app:boxCornerRadiusBottomStart="12dp"
+                 app:boxCornerRadiusTopEnd="12dp"
+                 app:boxCornerRadiusTopStart="12dp"
                  style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:inputType="text"
+                     android:paddingVertical="14dp"
+                     android:textColor="@color/text_primary"
+                     android:textColorHint="@color/text_secondary"
                      android:id="@+id/etRegManager" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -150,24 +239,41 @@
              android:layout_width="match_parent"
              android:layout_marginBottom="24dp"
              android:hint="Set Password (Min 6 chars)"
-             app:boxStrokeColor="#2196F3"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:passwordToggleEnabled="true"
+             app:passwordToggleTint="@color/primary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
              style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:inputType="textPassword"
+                 android:paddingVertical="14dp"
+                 android:textColor="@color/text_primary"
+                 android:textColorHint="@color/text_secondary"
                  android:id="@+id/etRegPassword" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
-             android:layout_height="60dp"
+             android:layout_height="52dp"
              android:layout_width="match_parent"
              android:layout_marginBottom="16dp"
-             app:backgroundTint="#2196F3"
-             android:textSize="18sp"
-             app:cornerRadius="8dp"
+             app:backgroundTint="@color/primary"
+             android:textColor="#FFFFFF"
+             android:textSize="16sp"
+             app:cornerRadius="14dp"
+             app:elevation="0dp"
              android:id="@+id/btnCompleteReg"
              android:text="REGISTER &amp; LOGIN"
              android:textStyle="bold" />

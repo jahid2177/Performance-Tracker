@@ -4,7 +4,7 @@
      xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
-     android:background="#F5F7FA"
+     android:background="@color/background"
      android:padding="24dp">
 
     <TextView
@@ -25,9 +25,12 @@
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
          app:layout_constraintTop_toTopOf="parent"
-         app:cardElevation="8dp"
+         app:cardElevation="0dp"
+         app:strokeColor="@color/card_stroke"
+         app:strokeWidth="1dp"
+         app:cardBackgroundColor="@color/surface_card"
          app:layout_constraintBottom_toBottomOf="parent"
-         app:cardCornerRadius="16dp"
+         app:cardCornerRadius="20dp"
          android:id="@+id/cardLogin">
 
         <LinearLayout
@@ -41,6 +44,7 @@
                  android:layout_width="wrap_content"
                  android:layout_marginBottom="24dp"
                  android:textSize="20sp"
+                 android:textColor="@color/text_primary"
                  android:layout_gravity="center"
                  android:text="Welcome Back"
                  android:textStyle="bold" />
@@ -49,12 +53,29 @@
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:hint="User ID / Admin ID"
+                 app:boxBackgroundMode="outline"
+                 app:boxBackgroundColor="@color/input_background"
+                 app:boxStrokeColor="@color/box_stroke_selector"
+                 app:boxStrokeWidth="1.5dp"
+                 app:boxStrokeWidthFocused="2dp"
+                 app:hintTextColor="@color/primary"
+                 android:textColorHint="@color/text_secondary"
+                 app:startIconDrawable="@drawable/ic_person"
+                 app:startIconTint="@color/primary"
+                 app:boxCornerRadiusBottomEnd="12dp"
+                 app:boxCornerRadiusBottomStart="12dp"
+                 app:boxCornerRadiusTopEnd="12dp"
+                 app:boxCornerRadiusTopStart="12dp"
                  style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:inputType="text"
+                     android:textSize="15sp"
+                     android:paddingVertical="14dp"
+                     android:textColor="@color/text_primary"
+                     android:textColorHint="@color/text_secondary"
                      android:id="@+id/etId" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -63,26 +84,47 @@
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:hint="Enter Password"
-                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                 app:boxBackgroundMode="outline"
+                 app:boxBackgroundColor="@color/input_background"
+                 app:boxStrokeColor="@color/box_stroke_selector"
+                 app:boxStrokeWidth="1.5dp"
+                 app:boxStrokeWidthFocused="2dp"
+                 app:hintTextColor="@color/primary"
+                 android:textColorHint="@color/text_secondary"
+                 app:startIconDrawable="@drawable/ic_lock"
+                 app:startIconTint="@color/primary"
                  app:passwordToggleEnabled="true"
+                 app:passwordToggleTint="@color/primary"
+                 app:boxCornerRadiusBottomEnd="12dp"
+                 app:boxCornerRadiusBottomStart="12dp"
+                 app:boxCornerRadiusTopEnd="12dp"
+                 app:boxCornerRadiusTopStart="12dp"
+                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                  android:layout_marginTop="16dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:inputType="textPassword"
+                     android:textSize="15sp"
+                     android:paddingVertical="14dp"
+                     android:textColor="@color/text_primary"
+                     android:textColorHint="@color/text_secondary"
                      android:id="@+id/etPassword" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <Button
-                 android:layout_height="60dp"
+            <com.google.android.material.button.MaterialButton
+                 android:layout_height="52dp"
                  android:layout_width="match_parent"
-                 app:cornerRadius="12dp"
-                 android:backgroundTint="@color/primary"
+                 app:cornerRadius="14dp"
+                 app:elevation="0dp"
+                 app:backgroundTint="@color/primary"
+                 android:textColor="#FFFFFF"
                  android:layout_marginTop="24dp"
                  android:id="@+id/btnLogin"
-                 android:text="LOGIN" />
+                 android:text="LOGIN"
+                 android:textStyle="bold" />
 
             <LinearLayout
                  android:layout_height="wrap_content"
@@ -94,7 +136,7 @@
                 <TextView
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textColor="#666666"
+                     android:textColor="@color/text_secondary"
                      android:text="Don't have an account? " />
 
                 <TextView
