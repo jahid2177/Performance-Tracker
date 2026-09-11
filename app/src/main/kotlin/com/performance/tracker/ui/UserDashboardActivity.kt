@@ -19,8 +19,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView // 🔥 এই ইম্পোর্টটি মিসিং ছিল
 import com.google.firebase.firestore.FirebaseFirestore
 import com.performance.tracker.R
+import com.performance.tracker.adapter.MonthTargetItem
+import com.performance.tracker.adapter.UserTargetMonthAdapter
 import com.performance.tracker.databinding.ActivityUserDashboardBinding
+import com.performance.tracker.databinding.DialogUserTargetDetailsBinding
 import com.performance.tracker.model.Performance
+import com.performance.tracker.model.User
+import com.performance.tracker.util.TargetUtils
 import com.performance.tracker.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,6 +40,9 @@ class UserDashboardActivity : AppCompatActivity() {
     private var branch = ""
     private var zone = ""
     private var manager = ""
+    
+    private var currentUser: User? = null
+    private var userReports: List<Performance> = emptyList()
     
     private var pendingSubmissions = 0
 
@@ -79,8 +87,25 @@ class UserDashboardActivity : AppCompatActivity() {
             showUserRankingDialog()
         }
 
-        binding.btnExit.setOnClickListener {
-            showExitDialog()
+        binding.cardUserTargetAchievement.setOnClickListener {
+            showUserTargetDetailsDialog()
+        }
+
+        val openSettings = {
+            val intent = Intent(this, SettingsActivity::class.java).apply {
+                putExtra("USER_ID", empId)
+                putExtra("USER_ROLE", "USER")
+                putExtra("USER_NAME", empName)
+            }
+            startActivity(intent)
+        }
+
+        binding.btnUserSettings?.setOnClickListener {
+            openSettings()
+        }
+
+        binding.cardUserSettings?.setOnClickListener {
+            openSettings()
         }
 
         binding.btnBackToHome.setOnClickListener {
@@ -326,11 +351,13 @@ class UserDashboardActivity : AppCompatActivity() {
     private fun setupObservers() {
         viewModel.userState.observe(this) { user ->
             if (user != null) {
+                currentUser = user
                 empName = user.name
                 branch = user.branch
                 zone = user.zone
                 manager = user.salesManager
                 binding.tvEmpName.text = "Welcome, $empName"
+                loadUserTargetAndAchievement(user)
             }
         }
 
@@ -344,8 +371,83 @@ class UserDashboardActivity : AppCompatActivity() {
                     addNewRow()
                     binding.btnSubmit.isEnabled = true
                     binding.btnSubmit.text = "SUBMIT"
+                    currentUser?.let { loadUserTargetAndAchievement(it) }
                 }
             }
         }
+    }
+
+    private fun loadUserTargetAndAchievement(user: User) {
+        val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
+        binding.tvUserTargetMonthTitle.text = "$currentMonth Target"
+
+        FirebaseFirestore.getInstance().collection("performance")
+            .whereEqualTo("employeeId", user.employeeId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                userReports = snapshot.toObjects(Performance::class.java)
+                val target = user.monthlyTarget
+                val achieved = TargetUtils.countCards(userReports, user.employeeId, currentMonth)
+                val rate = TargetUtils.calculateAchievementRate(achieved, target)
+
+                binding.tvUserTargetSummary.text = "Target: $target | Achieved: $achieved cards"
+                binding.tvUserAchievementPercentBadge.text = TargetUtils.formatAchievementRate(achieved, target)
+
+                val color = TargetUtils.getAchievementColor(achieved, target)
+                binding.tvUserAchievementPercentBadge.setTextColor(color)
+
+                val progress = rate.toInt().coerceIn(0, 100)
+                binding.progressUserTarget.progress = progress
+                binding.progressUserTarget.setIndicatorColor(color)
+
+                binding.tvUserTargetMotivation.text = when {
+                    target <= 0 -> "No target assigned by admin yet"
+                    rate >= 100f -> "🎉 Target Achieved! Great job!"
+                    rate >= 75f -> "Almost there! ${target - achieved} cards to reach 100%"
+                    else -> "${target - achieved} more cards needed to reach goal"
+                }
+            }
+    }
+
+    private fun showUserTargetDetailsDialog() {
+        val user = currentUser ?: return
+        val detailsBinding = DialogUserTargetDetailsBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setView(detailsBinding.root)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        detailsBinding.tvUserTargetDetailsTitle.text = "My Target & Progress"
+        detailsBinding.tvUserTargetDetailsSubtitle.text = "ID: ${user.employeeId} | ${user.branch.ifBlank { user.displayDepartment }}"
+        detailsBinding.btnCloseUserTargetDetails.setOnClickListener { dialog.dismiss() }
+
+        val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
+        detailsBinding.tvDetailCurrentMonthName.text = "$currentMonth Target"
+
+        val target = user.monthlyTarget
+        val currentAchieved = TargetUtils.countCards(userReports, user.employeeId, currentMonth)
+        val currentRate = TargetUtils.calculateAchievementRate(currentAchieved, target)
+
+        detailsBinding.tvDetailCurrentTargetCount.text = "Target: $target Cards"
+        detailsBinding.tvDetailCurrentAchievedCount.text = "Achieved: $currentAchieved Cards"
+        detailsBinding.tvDetailCurrentAchievementPercent.text = TargetUtils.formatAchievementRate(currentAchieved, target)
+
+        val currentColor = TargetUtils.getAchievementColor(currentAchieved, target)
+        detailsBinding.tvDetailCurrentAchievementPercent.setTextColor(currentColor)
+        detailsBinding.progressDetailCurrent.progress = currentRate.toInt().coerceIn(0, 100)
+        detailsBinding.progressDetailCurrent.setIndicatorColor(currentColor)
+
+        val months = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+        val monthlyItems = months.map { m ->
+            val ach = TargetUtils.countCards(userReports, user.employeeId, m)
+            val r = TargetUtils.calculateAchievementRate(ach, target)
+            MonthTargetItem(m, target, ach, r)
+        }
+
+        val adapter = UserTargetMonthAdapter(monthlyItems)
+        detailsBinding.recyclerUserTargetMonths.layoutManager = LinearLayoutManager(this)
+        detailsBinding.recyclerUserTargetMonths.adapter = adapter
+
+        dialog.show()
     }
 }

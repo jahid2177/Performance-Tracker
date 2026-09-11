@@ -18,30 +18,64 @@
          android:padding="16dp"
          android:orientation="vertical">
 
-        <TextView
-             android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:textSize="18sp"
-             android:textColor="@color/text_primary"
-             android:id="@+id/tvUserName"
-             android:text="Name"
-             android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
-             android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:textColor="@color/text_secondary"
-             android:layout_marginTop="4dp"
-             android:id="@+id/tvUserId"
-             android:text="ID: 123456789012" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="14dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/surface"
+                app:strokeColor="@color/card_stroke"
+                app:strokeWidth="1dp">
 
-        <TextView
-             android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:textColor="@color/text_muted"
-             android:layout_marginTop="2dp"
-             android:id="@+id/tvUserLocation"
-             android:text="Branch: Mirpur | Zone: Dhaka" />
+                <ImageView
+                    android:id="@+id/ivUserAvatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_person"
+                    app:tint="@color/primary"
+                    android:padding="8dp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="18sp"
+                     android:textColor="@color/text_primary"
+                     android:id="@+id/tvUserName"
+                     android:text="Name"
+                     android:textStyle="bold" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="@color/text_secondary"
+                     android:layout_marginTop="4dp"
+                     android:id="@+id/tvUserId"
+                     android:text="ID: 123456789012" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textColor="@color/text_muted"
+                     android:layout_marginTop="2dp"
+                     android:id="@+id/tvUserLocation"
+                     android:text="Branch: Mirpur | Zone: Dhaka" />
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
              android:layout_height="wrap_content"

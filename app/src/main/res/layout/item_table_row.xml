@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
      xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="wrap_content"
      android:layout_width="match_parent"
      android:weightSum="10"
@@ -64,5 +65,16 @@
          android:layout_weight="2"
          android:id="@+id/tvLimit"
          android:textStyle="bold" />
+
+    <ImageView
+         android:id="@+id/ivEditRow"
+         android:layout_height="match_parent"
+         android:layout_width="28dp"
+         android:padding="6dp"
+         android:src="@android:drawable/ic_menu_edit"
+         app:tint="@color/primary"
+         android:visibility="gone"
+         android:layout_gravity="center"
+         android:contentDescription="Edit" />
 
 </LinearLayout>

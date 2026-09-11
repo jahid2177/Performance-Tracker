@@ -1,6 +1,9 @@
 package com.performance.tracker.model
 
+import com.google.firebase.firestore.Exclude
+
 data class Performance(
+    @get:Exclude @set:Exclude var id: String = "",
     var employeeId: String = "",
     var employeeName: String = "",
     var branch: String = "",

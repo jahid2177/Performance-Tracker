@@ -15,12 +15,65 @@
         <TextView
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
-             android:layout_marginBottom="24dp"
+             android:layout_marginBottom="16dp"
              android:gravity="center"
              android:textSize="26sp"
              android:textColor="@color/primary"
              android:text="Create Account"
              android:textStyle="bold" />
+
+        <!-- Profile Picture Selection -->
+        <FrameLayout
+            android:layout_width="94dp"
+            android:layout_height="94dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="20dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRegAvatar"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="45dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="2dp">
+
+                <ImageView
+                    android:id="@+id/ivRegAvatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/surface_card"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_person"
+                    app:tint="@color/primary"
+                    android:padding="18dp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRegCameraBadge"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="bottom|end"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="15dp"
+                app:cardElevation="3dp"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="1.5dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_camera"
+                    app:tint="@color/primary" />
+            </com.google.android.material.card.MaterialCardView>
+
+        </FrameLayout>
 
         <com.google.android.material.textfield.TextInputLayout
              android:layout_height="wrap_content"
@@ -139,6 +192,35 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:layout_marginBottom="12dp"
+             android:hint="Official Number (Optional)"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
+             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:inputType="phone"
+                 android:paddingVertical="14dp"
+                 android:textColor="@color/text_primary"
+                 android:textColorHint="@color/text_secondary"
+                 android:id="@+id/etOfficialNumber" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
         <LinearLayout
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
@@ -207,7 +289,7 @@
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:layout_marginBottom="12dp"
-                 android:hint="Sales Manager Name"
+                 android:hint="Select Sales Manager"
                  app:boxBackgroundMode="outline"
                  app:boxBackgroundColor="@color/input_background"
                  app:boxStrokeColor="@color/box_stroke_selector"
@@ -219,9 +301,9 @@
                  app:boxCornerRadiusBottomStart="12dp"
                  app:boxCornerRadiusTopEnd="12dp"
                  app:boxCornerRadiusTopStart="12dp"
-                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <AutoCompleteTextView
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:inputType="text"

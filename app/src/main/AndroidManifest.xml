@@ -28,12 +28,23 @@
         <activity android:name=".ui.AdminDashboardActivity" />
         <activity android:name=".ui.ReportDetailsActivity" />
         <activity android:name=".ui.ProfileActivity" />
+        <activity android:name=".ui.SettingsActivity" />
         <activity android:name=".ui.ApprovalActivity" />
         
         <activity 
             android:name=".ui.MyReportActivity"
             android:label="My Reports"
             android:screenOrientation="portrait" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 

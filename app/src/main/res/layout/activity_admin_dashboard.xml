@@ -36,15 +36,16 @@
              app:strokeColor="@color/card_stroke"
              app:cardBackgroundColor="@color/surface"
              android:clickable="true"
-             android:focusable="true">
+             android:focusable="true"
+             android:id="@+id/btnAdminSettings">
 
             <ImageView
-                 android:layout_height="20dp"
-                 android:layout_width="20dp"
+                 android:layout_height="22dp"
+                 android:layout_width="22dp"
                  android:layout_gravity="center"
-                 android:src="@drawable/ic_logout"
+                 android:src="@drawable/ic_settings"
                  app:tint="@color/text_primary"
-                 android:id="@+id/btnTopAction" />
+                 android:id="@+id/ivAdminSettingsIcon" />
 
         </com.google.android.material.card.MaterialCardView>
 
@@ -111,6 +112,41 @@
                 <LinearLayout
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
+                     android:layout_marginBottom="10dp"
+                     android:weightSum="2"
+                     android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="52dp"
+                         android:layout_width="0dp"
+                         android:layout_marginEnd="6dp"
+                         app:backgroundTint="@color/badge_mint_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_mint_icon"
+                         android:layout_weight="1"
+                         android:id="@+id/btnMonthlyPdf"
+                         android:text="Monthly PDF"
+                         android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="52dp"
+                         android:layout_width="0dp"
+                         app:backgroundTint="@color/badge_blue_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_blue_icon"
+                         android:layout_marginStart="6dp"
+                         android:layout_weight="1"
+                         android:id="@+id/btnExportCsv"
+                         android:text="Export Excel / CSV"
+                         android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
                      android:layout_marginBottom="16dp"
                      android:weightSum="2"
                      android:orientation="horizontal">
@@ -131,17 +167,324 @@
                     <com.google.android.material.button.MaterialButton
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         app:backgroundTint="@color/badge_amber_bg"
+                         app:cornerRadius="14dp"
+                         app:elevation="0dp"
+                         android:textColor="@color/badge_amber_icon"
+                         android:layout_marginStart="6dp"
+                         android:layout_weight="1"
+                         android:id="@+id/btnToggleTrendChart"
+                         android:text="Trend Chart"
+                         android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="16dp"
+                     android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                         android:layout_height="52dp"
+                         android:layout_width="match_parent"
                          app:backgroundTint="@color/badge_mint_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_mint_icon"
-                         android:layout_marginStart="6dp"
-                         android:layout_weight="1"
-                         android:id="@+id/btnDownloadExcel"
-                         android:text="Export Report"
+                         android:id="@+id/btnManageTargets"
+                         app:icon="@drawable/ic_target"
+                         app:iconTint="@color/badge_mint_icon"
+                         android:text="🎯 Employee Targets &amp; Achievement"
                          android:textStyle="bold" />
 
                 </LinearLayout>
+
+                <!-- Target & Achievement Summary Card -->
+                <com.google.android.material.card.MaterialCardView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="18dp"
+                     app:cardCornerRadius="16dp"
+                     app:cardElevation="0dp"
+                     app:strokeWidth="1dp"
+                     app:strokeColor="@color/card_stroke"
+                     app:cardBackgroundColor="@color/surface"
+                     android:id="@+id/cardAdminTargetOverview">
+
+                     <LinearLayout
+                          android:layout_height="wrap_content"
+                          android:layout_width="match_parent"
+                          android:orientation="vertical"
+                          android:padding="16dp">
+
+                          <LinearLayout
+                               android:layout_height="wrap_content"
+                               android:layout_width="match_parent"
+                               android:gravity="center_vertical"
+                               android:orientation="horizontal">
+
+                               <FrameLayout
+                                    android:layout_width="36dp"
+                                    android:layout_height="36dp"
+                                    android:background="@drawable/bg_badge_mint">
+
+                                    <ImageView
+                                         android:layout_width="20dp"
+                                         android:layout_height="20dp"
+                                         android:layout_gravity="center"
+                                         android:src="@drawable/ic_target"
+                                         app:tint="@color/badge_mint_icon" />
+                               </FrameLayout>
+
+                               <TextView
+                                    android:layout_height="wrap_content"
+                                    android:layout_width="0dp"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="10dp"
+                                    android:textSize="15sp"
+                                    android:textColor="@color/text_primary"
+                                    android:textStyle="bold"
+                                    android:text="Team Target Achievement" />
+
+                               <TextView
+                                    android:id="@+id/tvAdminOverallAchievementBadge"
+                                    android:layout_height="wrap_content"
+                                    android:layout_width="wrap_content"
+                                    android:background="@drawable/bg_badge_green"
+                                    android:textColor="@color/badge_green_icon"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:paddingHorizontal="10dp"
+                                    android:paddingVertical="4dp"
+                                    android:text="0.0%" />
+                          </LinearLayout>
+
+                          <LinearLayout
+                               android:layout_height="wrap_content"
+                               android:layout_width="match_parent"
+                               android:orientation="horizontal"
+                               android:gravity="center_vertical"
+                               android:layout_marginTop="12dp">
+
+                               <TextView
+                                    android:id="@+id/tvAdminTargetSummaryText"
+                                    android:layout_height="wrap_content"
+                                    android:layout_width="0dp"
+                                    android:layout_weight="1"
+                                    android:textSize="13sp"
+                                    android:textColor="@color/text_secondary"
+                                    android:text="Target: 0 | Achieved: 0 Cards" />
+
+                               <TextView
+                                    android:id="@+id/btnAdminQuickManageTargets"
+                                    android:layout_height="wrap_content"
+                                    android:layout_width="wrap_content"
+                                    android:text="Manage Targets ›"
+                                    android:textColor="@color/primary"
+                                    android:textStyle="bold"
+                                    android:textSize="13sp" />
+                          </LinearLayout>
+
+                          <com.google.android.material.progressindicator.LinearProgressIndicator
+                               android:id="@+id/progressAdminOverallTarget"
+                               android:layout_width="match_parent"
+                               android:layout_height="wrap_content"
+                               android:layout_marginTop="10dp"
+                               app:trackCornerRadius="4dp"
+                               app:trackThickness="8dp"
+                               app:trackColor="#E0E0E0"
+                               app:indicatorColor="@color/primary"
+                               android:progress="0"
+                               android:max="100" />
+
+                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Keep legacy button hidden for backward compatibility -->
+                <Button
+                     android:id="@+id/btnDownloadExcel"
+                     android:layout_width="0dp"
+                     android:layout_height="0dp"
+                     android:visibility="gone" />
+
+                <!-- Performance Trend Line Chart Card (MPAndroidChart) -->
+                <com.google.android.material.card.MaterialCardView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     android:layout_marginBottom="18dp"
+                     app:cardCornerRadius="16dp"
+                     app:cardElevation="0dp"
+                     app:strokeWidth="1dp"
+                     app:strokeColor="@color/card_stroke"
+                     app:cardBackgroundColor="@color/surface"
+                     android:id="@+id/cardTrendChart">
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="vertical"
+                         android:padding="16dp">
+
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal">
+
+                            <ImageView
+                                 android:layout_height="22dp"
+                                 android:layout_width="22dp"
+                                 android:src="@drawable/ic_chart_line"
+                                 app:tint="@color/primary" />
+
+                            <TextView
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_weight="1"
+                                 android:layout_marginStart="8dp"
+                                 android:textSize="15sp"
+                                 android:textColor="@color/text_primary"
+                                 android:textStyle="bold"
+                                 android:id="@+id/tvTrendChartTitle"
+                                 android:text="Employee Performance Trend" />
+
+                            <TextView
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="wrap_content"
+                                 android:textSize="12sp"
+                                 android:textColor="@color/text_secondary"
+                                 android:id="@+id/tvTrendSelectedOfficer"
+                                 android:text="All Officers" />
+
+                        </LinearLayout>
+
+                        <!-- Officer Selector Dropdown -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:layout_marginTop="10dp"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal">
+
+                            <TextView
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="wrap_content"
+                                 android:textSize="13sp"
+                                 android:textColor="@color/text_secondary"
+                                 android:text="Officer:"
+                                 android:textStyle="bold" />
+
+                            <Spinner
+                                 android:layout_height="42dp"
+                                 android:layout_width="match_parent"
+                                 android:layout_marginStart="8dp"
+                                 android:backgroundTint="@color/primary"
+                                 android:id="@+id/spinnerChartEmployee" />
+
+                        </LinearLayout>
+
+                        <!-- Summary Trend Metrics -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:layout_marginTop="10dp"
+                             android:weightSum="3"
+                             android:orientation="horizontal">
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_weight="1"
+                                 android:layout_marginEnd="4dp"
+                                 android:background="@drawable/bg_badge_blue"
+                                 android:padding="8dp"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="12sp"
+                                     android:textColor="@color/badge_blue_icon"
+                                     android:textStyle="bold"
+                                     android:id="@+id/tvTrendTotalCards"
+                                     android:text="Total: 0" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="10sp"
+                                     android:textColor="@color/badge_blue_icon"
+                                     android:text="Annual Cards" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_weight="1"
+                                 android:layout_marginHorizontal="2dp"
+                                 android:background="@drawable/bg_badge_green"
+                                 android:padding="8dp"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="12sp"
+                                     android:textColor="@color/badge_green_icon"
+                                     android:textStyle="bold"
+                                     android:id="@+id/tvTrendPeakMonth"
+                                     android:text="Peak: -" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="10sp"
+                                     android:textColor="@color/badge_green_icon"
+                                     android:text="Best Month" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_weight="1"
+                                 android:layout_marginStart="4dp"
+                                 android:background="@drawable/bg_badge_mint"
+                                 android:padding="8dp"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="12sp"
+                                     android:textColor="@color/badge_mint_icon"
+                                     android:textStyle="bold"
+                                     android:id="@+id/tvTrendAvgMonthly"
+                                     android:text="Avg: 0.0" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="10sp"
+                                     android:textColor="@color/badge_mint_icon"
+                                     android:text="Avg / Month" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- MPAndroidChart LineChart -->
+                        <com.github.mikephil.charting.charts.LineChart
+                             android:layout_height="220dp"
+                             android:layout_width="match_parent"
+                             android:layout_marginTop="12dp"
+                             android:id="@+id/trendLineChart" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
 
                 <!-- Filters & Ranking Section -->
                 <TextView

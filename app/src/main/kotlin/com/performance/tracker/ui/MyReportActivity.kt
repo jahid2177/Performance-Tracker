@@ -6,6 +6,7 @@ import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.performance.tracker.R
 import com.performance.tracker.adapter.ReportAdapter
 import com.performance.tracker.databinding.ActivityAdminDashboardBinding
 import com.performance.tracker.model.ReportSummary
@@ -32,9 +33,10 @@ class MyReportActivity : AppCompatActivity() {
         binding.optionsLayout.visibility = View.GONE 
         binding.progressBar.visibility = View.VISIBLE
 
-        // ব্যাক বাটন হিসেবে পাওয়ার আইকনটি পরিবর্তন
-        binding.btnTopAction.setImageResource(android.R.drawable.ic_menu_revert)
-        binding.btnTopAction.setOnClickListener { finish() }
+        // ব্যাক বাটন হিসেবে আইকনটি পরিবর্তন
+        binding.ivAdminSettingsIcon.setImageResource(R.drawable.ic_chevron_right)
+        binding.ivAdminSettingsIcon.rotation = 180f
+        binding.btnAdminSettings.setOnClickListener { finish() }
 
         setupRecyclerView()
         
@@ -74,12 +76,13 @@ class MyReportActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = ReportAdapter(emptyList(), isAdmin = false, onCardClick = { summary ->
+        adapter = ReportAdapter(emptyList(), canEdit = false, canDelete = false, onCardClick = { summary ->
             val intent = Intent(this, ReportDetailsActivity::class.java).apply {
                 putExtra("EMP_ID", summary.employeeId)
                 putExtra("MONTH", summary.month)
                 putExtra("EMP_NAME", summary.employeeName)
                 putExtra("BRANCH", summary.branch)
+                putExtra("CAN_EDIT", false)
             }
             startActivity(intent)
         })

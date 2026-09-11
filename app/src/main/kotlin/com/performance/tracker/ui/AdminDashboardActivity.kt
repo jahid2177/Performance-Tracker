@@ -36,18 +36,27 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.firestore.FirebaseFirestore
-import com.lowagie.text.Document
-import com.lowagie.text.Font
-import com.lowagie.text.Paragraph
-import com.lowagie.text.pdf.PdfPTable
-import com.lowagie.text.pdf.PdfWriter
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
 import com.performance.tracker.R
 import com.performance.tracker.adapter.ReportAdapter
+import com.performance.tracker.adapter.TargetOfficerAdapter
+import com.performance.tracker.adapter.TargetOfficerItem
 import com.performance.tracker.databinding.ActivityAdminDashboardBinding
+import com.performance.tracker.databinding.DialogSetTargetBinding
+import com.performance.tracker.databinding.DialogTargetManagementBinding
 import com.performance.tracker.model.Performance
 import com.performance.tracker.model.ReportSummary
 import com.performance.tracker.model.User
+import com.performance.tracker.util.ReportExporter
+import com.performance.tracker.util.TargetUtils
 import com.performance.tracker.viewmodel.MainViewModel
+import android.widget.AdapterView
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -77,8 +86,13 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupButtons()
+        setupTrendChart()
         
-        binding.tvHeaderTitle.text = "Control Panel ($userRole)"
+        if (userRole.equals("Sales Manager", ignoreCase = true)) {
+            binding.tvHeaderTitle.text = "Manager Dashboard"
+        } else {
+            binding.tvHeaderTitle.text = "Control Panel ($userRole)"
+        }
         
         loadDashboardData()
         
@@ -87,11 +101,14 @@ class AdminDashboardActivity : AppCompatActivity() {
             loadDashboardData()
         }
 
-        binding.btnTopAction.setOnClickListener {
-            val intent = Intent(this, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        binding.btnAdminSettings.setOnClickListener {
+            val loggedInId = intent.getStringExtra("USER_ID") ?: com.performance.tracker.util.SessionManager.getUserId(this)
+            val intent = Intent(this, SettingsActivity::class.java).apply {
+                putExtra("USER_ID", loggedInId)
+                putExtra("USER_ROLE", userRole)
+                putExtra("USER_NAME", userName)
+            }
             startActivity(intent)
-            finish()
         }
     }
 
@@ -109,16 +126,20 @@ class AdminDashboardActivity : AppCompatActivity() {
 
                 if (allReports.isNotEmpty()) {
                     showDefaultDashboard()
+                    populateChartEmployeeSpinner()
+                    updateTeamTargetOverview()
                 } else {
                     binding.tvFilterStatus.text = "0 card"
                     binding.tvFilterStatus.setTextColor(Color.RED)
                     adapter.updateList(emptyList())
+                    updateTeamTargetOverview()
                 }
 
             } else {
                 binding.tvFilterStatus.text = "0 card"
                 binding.tvFilterStatus.setTextColor(Color.RED)
                 adapter.updateList(emptyList())
+                updateTeamTargetOverview()
             }
         }
     }
@@ -143,20 +164,38 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        val canEditOrDelete = userRole.equals("ADMIN", ignoreCase = true)
+        val isAdmin = userRole.equals("ADMIN", ignoreCase = true)
+        val isSalesManager = userRole.equals("Sales Manager", ignoreCase = true)
+        val canEdit = isAdmin || isSalesManager
+        val canDelete = isAdmin
 
-        adapter = ReportAdapter(emptyList(), isAdmin = canEditOrDelete, 
+        adapter = ReportAdapter(
+            emptyList(),
+            canEdit = canEdit,
+            canDelete = canDelete,
             onCardClick = { summary ->
                 val intent = Intent(this, ReportDetailsActivity::class.java).apply {
                     putExtra("EMP_ID", summary.employeeId)
                     putExtra("MONTH", summary.month)
                     putExtra("EMP_NAME", summary.employeeName)
                     putExtra("BRANCH", summary.branch)
+                    putExtra("CAN_EDIT", canEdit)
                 }
                 startActivity(intent)
             },
             onActionClick = { summary, action ->
-                if (action == "DELETE") confirmDeleteGroup(summary)
+                if (action == "DELETE" && canDelete) {
+                    confirmDeleteGroup(summary)
+                } else if (action == "EDIT" && canEdit) {
+                    val intent = Intent(this, ReportDetailsActivity::class.java).apply {
+                        putExtra("EMP_ID", summary.employeeId)
+                        putExtra("MONTH", summary.month)
+                        putExtra("EMP_NAME", summary.employeeName)
+                        putExtra("BRANCH", summary.branch)
+                        putExtra("CAN_EDIT", true)
+                    }
+                    startActivity(intent)
+                }
             }
         )
         binding.recyclerAdminReport.layoutManager = LinearLayoutManager(this)
@@ -164,13 +203,34 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
-        binding.btnDownloadExcel.setOnClickListener { showExportDialog(isExcel = true) }
+        binding.btnMonthlyPdf.setOnClickListener { 
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No data available to export", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            showExportDialog(defaultFormatIsPdf = true) 
+        }
+
+        binding.btnExportCsv.setOnClickListener { 
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No data available to export", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            showExportDialog(defaultFormatIsPdf = false) 
+        }
+
+        binding.btnDownloadExcel.setOnClickListener { 
+            showExportDialog(defaultFormatIsPdf = false) 
+        }
+
+        binding.btnToggleTrendChart.setOnClickListener {
+            val isVisible = binding.cardTrendChart.visibility == View.VISIBLE
+            binding.cardTrendChart.visibility = if (isVisible) View.GONE else View.VISIBLE
+            val status = if (isVisible) "hidden" else "visible"
+            Toast.makeText(this, "Trend chart $status", Toast.LENGTH_SHORT).show()
+        }
         
-        // PDF বাটনের আইডি ব্যবহার করে "Who Not Submitted" অপশনটি ফায়ার করা হয়েছে
-        val btnWhoNotSubmit = findViewById<Button>(resources.getIdentifier("btnWhoNotSubmitted", "id", packageName)) 
-            ?: findViewById<Button>(resources.getIdentifier("btnDownloadPdf", "id", packageName))
-            
-        btnWhoNotSubmit?.setOnClickListener { 
+        binding.btnWhoNotSubmitted.setOnClickListener { 
             showWhoNotSubmittedDialog() 
         }
 
@@ -206,6 +266,10 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         binding.btnOfficerList.setOnClickListener { startActivity(Intent(this, OfficerListActivity::class.java)) }
         binding.btnApproval.setOnClickListener { startActivity(Intent(this, ApprovalActivity::class.java)) }
+
+        binding.btnManageTargets.setOnClickListener { showTargetManagementDialog() }
+        binding.btnAdminQuickManageTargets.setOnClickListener { showTargetManagementDialog() }
+        binding.cardAdminTargetOverview.setOnClickListener { showTargetManagementDialog() }
     }
 
     // ========================================================
@@ -286,20 +350,173 @@ class AdminDashboardActivity : AppCompatActivity() {
 }
 
     // ========================================================
-    // 🔥 Custom Export Dialog & Logic (Summary + Details)
+    // 🔥 MPAndroidChart: Individual Performance Trends
     // ========================================================
-    private fun showExportDialog(isExcel: Boolean) {
+    private fun setupTrendChart() {
+        binding.cardTrendChart.visibility = View.VISIBLE
+        val chart = binding.trendLineChart
+        chart.description.isEnabled = false
+        chart.setTouchEnabled(true)
+        chart.isDragEnabled = true
+        chart.setScaleEnabled(false)
+        chart.setPinchZoom(false)
+        chart.setDrawGridBackground(false)
+        chart.legend.isEnabled = false
+        chart.setExtraOffsets(8f, 10f, 8f, 10f)
+
+        val xAxis = chart.xAxis
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.setDrawGridLines(false)
+        xAxis.valueFormatter = IndexAxisValueFormatter(shortMonthsList)
+        xAxis.granularity = 1f
+        xAxis.textColor = Color.parseColor("#64748B")
+        xAxis.textSize = 9.5f
+
+        val yAxis = chart.axisLeft
+        yAxis.axisMinimum = 0f
+        yAxis.granularity = 1f
+        yAxis.textColor = Color.parseColor("#64748B")
+        yAxis.gridColor = Color.parseColor("#E2E8F0")
+
+        chart.axisRight.isEnabled = false
+    }
+
+    private fun populateChartEmployeeSpinner() {
+        val uniqueEmployees = allReports.distinctBy { it.employeeId }.sortedBy { it.employeeName }
+        if (uniqueEmployees.isEmpty()) return
+
+        val spinnerItems = ArrayList<String>()
+        spinnerItems.add("All Team Combined")
+        uniqueEmployees.forEach { emp ->
+            spinnerItems.add("${emp.employeeName} (${emp.employeeId})")
+        }
+
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinnerItems)
+        binding.spinnerChartEmployee.adapter = spinnerAdapter
+
+        binding.spinnerChartEmployee.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (position == 0) {
+                    renderTrendChart(null, "All Team Combined")
+                } else {
+                    val emp = uniqueEmployees[position - 1]
+                    renderTrendChart(emp.employeeId, emp.employeeName)
+                }
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+
+        if (uniqueEmployees.isNotEmpty()) {
+            binding.spinnerChartEmployee.setSelection(1)
+        }
+    }
+
+    private fun renderTrendChart(employeeId: String?, displayName: String) {
+        val chart = binding.trendLineChart
+        binding.tvTrendSelectedOfficer.text = displayName
+
+        val targetData = if (employeeId == null) {
+            allReports
+        } else {
+            allReports.filter { it.employeeId == employeeId }
+        }
+
+        val entries = ArrayList<Entry>()
+        var totalCardsAnnual = 0
+        var peakCards = 0
+        var peakMonthName = "-"
+        var activeMonthsCount = 0
+
+        monthsList.forEachIndexed { index, fullMonthName ->
+            val monthData = targetData.filter { it.month.equals(fullMonthName, ignoreCase = true) }
+            val cardsCount = if (monthData.size == 1 && monthData.first().limit.equals("NIL", ignoreCase = true)) {
+                0
+            } else {
+                monthData.size
+            }
+
+            entries.add(Entry(index.toFloat(), cardsCount.toFloat()))
+            totalCardsAnnual += cardsCount
+            if (cardsCount > 0) activeMonthsCount++
+            if (cardsCount > peakCards) {
+                peakCards = cardsCount
+                peakMonthName = shortMonthsList[index]
+            }
+        }
+
+        // Update Stat Cards
+        binding.tvTrendTotalCards.text = "Total: $totalCardsAnnual"
+        binding.tvTrendPeakMonth.text = if (peakCards > 0) "Peak: $peakMonthName ($peakCards)" else "Peak: None"
+        val avgMonthly = if (activeMonthsCount > 0) String.format(Locale.US, "%.1f", totalCardsAnnual.toFloat() / activeMonthsCount) else "0.0"
+        binding.tvTrendAvgMonthly.text = "Avg: $avgMonthly"
+
+        val dataSet = LineDataSet(entries, "Performance").apply {
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+            cubicIntensity = 0.2f
+            color = Color.parseColor("#2563EB")
+            lineWidth = 2.5f
+            setCircleColor(Color.parseColor("#2563EB"))
+            circleRadius = 4.5f
+            circleHoleColor = Color.WHITE
+            circleHoleRadius = 2.5f
+            setDrawValues(true)
+            valueTextSize = 9.5f
+            valueTextColor = Color.parseColor("#1E293B")
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return if (value > 0) value.toInt().toString() else ""
+                }
+            }
+            setDrawFilled(true)
+            fillColor = Color.parseColor("#93C5FD")
+            fillAlpha = 65
+            highLightColor = Color.parseColor("#1D4ED8")
+            setDrawHighlightIndicators(true)
+        }
+
+        val lineData = LineData(dataSet)
+        chart.data = lineData
+        chart.animateY(500)
+        chart.invalidate()
+    }
+
+    // ========================================================
+    // 🔥 OpenPDF, Kotlin-CSV & Standard XLSX: Performance Report Exports
+    // ========================================================
+    private enum class ReportFormatOption { XLSX, CSV, PDF }
+
+    private fun showExportDialog(defaultFormatIsPdf: Boolean) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_export_report, null)
         val spinnerFrom = dialogView.findViewById<Spinner>(R.id.spinnerFromMonth)
         val spinnerTo = dialogView.findViewById<Spinner>(R.id.spinnerToMonth)
-        val btnExport = dialogView.findViewById<Button>(R.id.btnExportData)
+        val btnDownload = dialogView.findViewById<Button>(R.id.btnDownloadReport)
+        val btnShare = dialogView.findViewById<Button>(R.id.btnShareReport)
         val tvTitle = dialogView.findViewById<TextView>(R.id.tvExportTitle)
-        
+        val rgFormat = dialogView.findViewById<RadioGroup>(R.id.rgExportFormat)
+        val rbXlsx = dialogView.findViewById<RadioButton>(R.id.rbFormatXlsx)
+        val rbCsv = dialogView.findViewById<RadioButton>(R.id.rbFormatCsv)
+        val rbPdf = dialogView.findViewById<RadioButton>(R.id.rbFormatPdf)
         val rgExportType = dialogView.findViewById<RadioGroup>(R.id.rgExportType)
+        val rbFullReport = dialogView.findViewById<RadioButton>(R.id.rbFullReport)
         val rbSummary = dialogView.findViewById<RadioButton>(R.id.rbSummary)
+        val rbDetails = dialogView.findViewById<RadioButton>(R.id.rbDetails)
 
-        tvTitle.text = if (isExcel) "Export Excel Report" else "Export PDF Report"
-        rgExportType.visibility = if (isExcel) View.VISIBLE else View.GONE
+        if (defaultFormatIsPdf) {
+            rbPdf.isChecked = true
+            tvTitle.text = "Monthly Performance Report (PDF)"
+        } else {
+            rbXlsx.isChecked = true
+            tvTitle.text = "Employee Performance Export (Excel .xlsx)"
+        }
+
+        rgFormat.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.rbFormatXlsx -> tvTitle.text = "Employee Performance Export (Excel .xlsx)"
+                R.id.rbFormatCsv -> tvTitle.text = "Employee Performance Export (CSV)"
+                R.id.rbFormatPdf -> tvTitle.text = "Monthly Performance Report (PDF)"
+            }
+        }
 
         val monthAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, monthsList)
         spinnerFrom.adapter = monthAdapter
@@ -315,202 +532,86 @@ class AdminDashboardActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this).setView(dialogView).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        btnExport.setOnClickListener {
+        val handleExport = { isShare: Boolean ->
             val fromMonth = spinnerFrom.selectedItem.toString()
             val toMonth = spinnerTo.selectedItem.toString()
-            
             val fromIdx = monthsList.indexOf(fromMonth)
             val toIdx = monthsList.indexOf(toMonth)
 
             if (fromIdx > toIdx) {
                 Toast.makeText(this, "Invalid Range: 'From Month' cannot be after 'To Month'", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
+            } else {
+                val selectedMonths = monthsList.subList(fromIdx, toIdx + 1)
+                val format = when {
+                    rbXlsx.isChecked -> ReportFormatOption.XLSX
+                    rbCsv.isChecked -> ReportFormatOption.CSV
+                    else -> ReportFormatOption.PDF
+                }
+                val scope = when {
+                    rbDetails.isChecked -> ReportExporter.XlsxReportMode.DETAILS
+                    rbSummary.isChecked -> ReportExporter.XlsxReportMode.SUMMARY
+                    else -> ReportExporter.XlsxReportMode.FULL
+                }
+
+                dialog.dismiss()
+                executeExport(selectedMonths, format, fromMonth, toMonth, scope, isShare)
             }
-
-            val selectedMonths = monthsList.subList(fromIdx, toIdx + 1)
-            val isSummary = isExcel && rbSummary.isChecked 
-
-            dialog.dismiss()
-            processExport(selectedMonths, isExcel, fromMonth, toMonth, isSummary)
         }
-        
+
+        btnDownload.setOnClickListener { handleExport(false) }
+        btnShare.setOnClickListener { handleExport(true) }
+
         dialog.show()
     }
 
-    private fun processExport(selectedMonths: List<String>, isExcel: Boolean, fromMonth: String, toMonth: String, isSummary: Boolean) {
+    private fun executeExport(
+        selectedMonths: List<String>,
+        format: ReportFormatOption,
+        fromMonth: String,
+        toMonth: String,
+        scope: ReportExporter.XlsxReportMode,
+        isShare: Boolean
+    ) {
         val filteredData = allReports.filter { selectedMonths.contains(it.month) }
 
         if (filteredData.isEmpty()) { 
-            Toast.makeText(this, "No records found for this range", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No records found for the selected period", Toast.LENGTH_SHORT).show()
             return 
         }
 
         val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
-        val headerRange = if (fromMonth == toMonth) "($fromMonth-$year)" else "($fromMonth To $toMonth-$year)"
+        val monthRange = if (fromMonth == toMonth) "$fromMonth $year" else "$fromMonth to $toMonth $year"
 
-        if (isExcel) {
-            generateExcel(filteredData, headerRange, isSummary)
-        } else {
-            generatePDF(filteredData, headerRange)
-        }
-    }
-
-    private fun generateExcel(data: List<Performance>, headerRange: String, isSummary: Boolean) {
-        try {
-            val fileName = "Performance_Report_${System.currentTimeMillis()}.csv"
-            val mimeType = "text/csv"
-            val (fileUri, outputStream) = getFileUriAndStream(fileName, mimeType)
-            
-            if (outputStream == null) return
-            
-            outputStream.use { stream ->
-                csvWriter().open(stream) {
-                    writeRow(listOf("Performance Report"))
-                    writeRow(listOf(headerRange))
-                    writeRow(listOf("")) 
-                    
-                    if (isSummary) {
-                        writeRow(listOf("SL", "Month", "Officer", "Branch", "Total card"))
-                        
-                        val groupedData = data.groupBy { it.employeeId + "_" + it.month }.map { (_, performances) ->
-                            val first = performances.first()
-                            val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
-                            ReportSummary(first.employeeId, first.employeeName, first.branch, first.month, first.timestamp, actualCount)
-                        }
-                        
-                        groupedData.forEachIndexed { index, item -> 
-                            writeRow(listOf(
-                                (index + 1).toString(), 
-                                item.month,          
-                                item.employeeName, 
-                                item.branch, 
-                                item.totalRecords.toString()
-                            )) 
-                        }
-                    } else {
-                        writeRow(listOf("SL", "Month", "Officer", "Branch", "Applicant Name", "A/C No"))
-                        
-                        val detailsData = data.filter { !it.limit.equals("NIL", ignoreCase = true) }
-                        
-                        detailsData.forEachIndexed { index, item -> 
-                            writeRow(listOf(
-                                (index + 1).toString(), 
-                                item.month,          
-                                item.employeeName, 
-                                item.branch, 
-                                item.applicantName, 
-                                item.accountNo
-                            )) 
-                        }
-                    }
-                }
+        when (format) {
+            ReportFormatOption.XLSX -> {
+                ReportExporter.exportPerformanceXlsx(
+                    context = this,
+                    data = filteredData,
+                    monthRange = monthRange,
+                    mode = scope,
+                    isShare = isShare
+                )
             }
-            Toast.makeText(this, "Excel saved in Downloads", Toast.LENGTH_SHORT).show()
-            showDownloadNotification(fileName, fileUri, mimeType)
-        } catch (e: Exception) { 
-            e.printStackTrace()
-            Toast.makeText(this, "Error generating Excel: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun generatePDF(data: List<Performance>, headerRange: String) {
-        try {
-            val fileName = "Performance_Report_${System.currentTimeMillis()}.pdf"
-            val mimeType = "application/pdf"
-            val (fileUri, outputStream) = getFileUriAndStream(fileName, mimeType)
-            
-            if (outputStream == null) return
-            
-            val doc = Document()
-            PdfWriter.getInstance(doc, outputStream)
-            doc.open()
-            
-            val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
-            val titlePara = Paragraph("Performance Report", titleFont)
-            titlePara.alignment = Paragraph.ALIGN_CENTER
-            doc.add(titlePara)
-            
-            val subFont = Font(Font.HELVETICA, 14f, Font.BOLD)
-            val subPara = Paragraph(headerRange, subFont)
-            subPara.alignment = Paragraph.ALIGN_CENTER
-            subPara.spacingAfter = 20f
-            doc.add(subPara)
-
-            val table = PdfPTable(6).apply { 
-                widthPercentage = 100f 
-                setWidths(floatArrayOf(1f, 2f, 3f, 2.5f, 3.5f, 2.5f)) 
+            ReportFormatOption.CSV -> {
+                ReportExporter.exportPerformanceCsv(
+                    context = this,
+                    data = filteredData,
+                    monthRange = monthRange,
+                    isSummary = (scope == ReportExporter.XlsxReportMode.SUMMARY),
+                    isShare = isShare
+                )
             }
-            
-            val headerFont = Font(Font.HELVETICA, 12f, Font.BOLD)
-            val headers = listOf("SL", "Month", "Officer", "Branch", "Applicant Name", "A/C No")
-            headers.forEach { headerText ->
-                table.addCell(Paragraph(headerText, headerFont))
+            ReportFormatOption.PDF -> {
+                ReportExporter.generateMonthlyPdf(
+                    context = this,
+                    data = filteredData,
+                    monthRange = monthRange,
+                    managerName = if (userRole.equals("Sales Manager", ignoreCase = true)) userName else "",
+                    isSummary = (scope == ReportExporter.XlsxReportMode.SUMMARY),
+                    isShare = isShare
+                )
             }
-            
-            val dataFont = Font(Font.HELVETICA, 11f, Font.NORMAL)
-            
-            val detailsData = data.filter { !it.limit.equals("NIL", ignoreCase = true) }
-            
-            detailsData.forEachIndexed { index, item ->
-                table.addCell(Paragraph((index + 1).toString(), dataFont))
-                table.addCell(Paragraph(item.month, dataFont))
-                table.addCell(Paragraph(item.employeeName, dataFont))
-                table.addCell(Paragraph(item.branch, dataFont))
-                table.addCell(Paragraph(item.applicantName, dataFont))
-                table.addCell(Paragraph(item.accountNo, dataFont))
-            }
-            
-            doc.add(table)
-            doc.close()
-            outputStream.close()
-            
-            Toast.makeText(this, "PDF saved in Downloads", Toast.LENGTH_SHORT).show()
-            showDownloadNotification(fileName, fileUri, mimeType)
-        } catch (e: Exception) { 
-            e.printStackTrace()
-            Toast.makeText(this, "PDF Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
-    }
-
-    private fun getFileUriAndStream(fileName: String, mimeType: String): Pair<Uri?, OutputStream?> {
-        val cv = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-        }
-        val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
-        val stream = uri?.let { contentResolver.openOutputStream(it) }
-        return Pair(uri, stream)
-    }
-
-    private fun showDownloadNotification(fileName: String, fileUri: Uri?, mimeType: String) {
-        val channelId = "report_downloads"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_DEFAULT)
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(fileUri, mimeType)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("Report Download Complete")
-            .setContentText(fileName)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 
     // ========================================================
@@ -554,6 +655,9 @@ class AdminDashboardActivity : AppCompatActivity() {
             binding.tvFilterStatus.text = "Viewing: $empName ($cardText)"
             binding.tvFilterStatus.setTextColor(Color.parseColor("#2196F3"))
         }
+
+        binding.cardTrendChart.visibility = View.VISIBLE
+        renderTrendChart(empId, empName)
     }
 
     private fun showMonthSelectionGrid() {
@@ -760,5 +864,277 @@ class AdminDashboardActivity : AppCompatActivity() {
             holder.tvName.text = months[position].take(3)
         }
         override fun getItemCount() = months.size
+    }
+
+    // ========================================================
+    // 🔥 Target & Achievement Management Logic
+    // ========================================================
+
+    private fun updateTeamTargetOverview() {
+        db.collection("employees")
+            .whereEqualTo("status", "Approved")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val employees = snapshot.toObjects(User::class.java)
+                val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
+                val totalTarget = employees.sumOf { it.monthlyTarget }
+                val achievedInMonth = allReports.count { 
+                    !it.limit.equals("NIL", ignoreCase = true) && it.month.equals(currentMonth, ignoreCase = true) 
+                }
+                
+                val rate = TargetUtils.calculateAchievementRate(achievedInMonth, totalTarget)
+                binding.tvAdminOverallAchievementBadge.text = TargetUtils.formatAchievementRate(achievedInMonth, totalTarget)
+                val color = TargetUtils.getAchievementColor(achievedInMonth, totalTarget)
+                binding.tvAdminOverallAchievementBadge.setTextColor(color)
+                binding.tvAdminTargetSummaryText.text = "Target: $totalTarget | Achieved: $achievedInMonth Cards ($currentMonth)"
+                binding.progressAdminOverallTarget.progress = rate.toInt().coerceIn(0, 100)
+                binding.progressAdminOverallTarget.setIndicatorColor(color)
+            }
+    }
+
+    private fun showTargetManagementDialog() {
+        val dialogBinding = DialogTargetManagementBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogBinding.btnCloseTargetDialog.setOnClickListener { dialog.dismiss() }
+
+        val filterMonths = listOf("Current Month", "All Months / Total") + monthsList
+        val monthAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, filterMonths)
+        dialogBinding.spinnerTargetFilterMonth.adapter = monthAdapter
+
+        val currentMonthName = SimpleDateFormat("MMMM", Locale.US).format(Date())
+
+        var allApprovedOfficers = listOf<User>()
+
+        fun showEmployeeTargetDetails(officer: User) {
+            showUserTargetDetailsDialog(officer)
+        }
+
+        lateinit var targetOfficerAdapter: TargetOfficerAdapter
+        targetOfficerAdapter = TargetOfficerAdapter(
+            items = emptyList(),
+            onSetTargetClick = { officer ->
+                val selectedMonthPos = dialogBinding.spinnerTargetFilterMonth.selectedItemPosition
+                val targetMonth = when (selectedMonthPos) {
+                    0 -> currentMonthName
+                    1 -> "General"
+                    else -> filterMonths[selectedMonthPos]
+                }
+                showSetTargetDialog(officer, targetMonth) {
+                    loadTargetDataForDialog(dialogBinding, currentMonthName, targetOfficerAdapter) { officers ->
+                        allApprovedOfficers = officers
+                    }
+                    updateTeamTargetOverview()
+                }
+            },
+            onItemClick = { officer ->
+                showEmployeeTargetDetails(officer)
+            }
+        )
+
+        dialogBinding.recyclerTargetOfficers.layoutManager = LinearLayoutManager(this)
+        dialogBinding.recyclerTargetOfficers.adapter = targetOfficerAdapter
+
+        fun applyFilterAndSearch() {
+            val query = dialogBinding.etSearchTargetOfficer.text.toString().trim()
+            val selectedMonthPos = dialogBinding.spinnerTargetFilterMonth.selectedItemPosition
+            val filterMonth = when (selectedMonthPos) {
+                0 -> currentMonthName
+                1 -> null
+                else -> filterMonths[selectedMonthPos]
+            }
+
+            val filteredOfficers = if (query.isEmpty()) {
+                allApprovedOfficers
+            } else {
+                allApprovedOfficers.filter {
+                    it.name.contains(query, ignoreCase = true) ||
+                    it.employeeId.contains(query, ignoreCase = true) ||
+                    it.branch.contains(query, ignoreCase = true) ||
+                    it.department.contains(query, ignoreCase = true)
+                }
+            }
+
+            var totalTargetSum = 0
+            var totalAchievedSum = 0
+            var officersWithTargetCount = 0
+
+            val items = filteredOfficers.map { officer ->
+                val target = officer.monthlyTarget
+                val achieved = TargetUtils.countCards(allReports, officer.employeeId, filterMonth)
+                val rate = TargetUtils.calculateAchievementRate(achieved, target)
+
+                if (target > 0) {
+                    totalTargetSum += target
+                    officersWithTargetCount++
+                }
+                totalAchievedSum += achieved
+
+                TargetOfficerItem(officer, target, achieved, rate)
+            }
+
+            targetOfficerAdapter.updateList(items)
+
+            if (items.isEmpty()) {
+                dialogBinding.layoutTargetEmptyState.visibility = View.VISIBLE
+                dialogBinding.recyclerTargetOfficers.visibility = View.GONE
+            } else {
+                dialogBinding.layoutTargetEmptyState.visibility = View.GONE
+                dialogBinding.recyclerTargetOfficers.visibility = View.VISIBLE
+            }
+
+            val teamOverallRate = TargetUtils.calculateAchievementRate(totalAchievedSum, totalTargetSum)
+            dialogBinding.tvTeamTotalTarget.text = "$totalTargetSum Cards"
+            dialogBinding.tvTeamTotalAchieved.text = "$totalAchievedSum Cards"
+            dialogBinding.tvTeamTargetOfficersCount.text = "$officersWithTargetCount Officers"
+            dialogBinding.tvTeamOverallPercent.text = TargetUtils.formatAchievementRate(totalAchievedSum, totalTargetSum)
+            val teamColor = TargetUtils.getAchievementColor(totalAchievedSum, totalTargetSum)
+            dialogBinding.tvTeamOverallPercent.setTextColor(teamColor)
+            dialogBinding.progressTeamOverall.progress = teamOverallRate.toInt().coerceIn(0, 100)
+            dialogBinding.progressTeamOverall.setIndicatorColor(teamColor)
+        }
+
+        dialogBinding.spinnerTargetFilterMonth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                applyFilterAndSearch()
+            }
+            override fun onNothingSelected(p0: AdapterView<*>?) {}
+        }
+
+        dialogBinding.etSearchTargetOfficer.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                applyFilterAndSearch()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        loadTargetDataForDialog(dialogBinding, currentMonthName, targetOfficerAdapter) { officers ->
+            allApprovedOfficers = officers
+            applyFilterAndSearch()
+        }
+
+        dialog.show()
+    }
+
+    private fun loadTargetDataForDialog(
+        dialogBinding: DialogTargetManagementBinding,
+        currentMonth: String,
+        adapter: TargetOfficerAdapter,
+        onLoaded: (List<User>) -> Unit
+    ) {
+        db.collection("employees")
+            .whereEqualTo("status", "Approved")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val officers = snapshot.toObjects(User::class.java).sortedBy { it.name }
+                onLoaded(officers)
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to load officers", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun showSetTargetDialog(user: User, initialMonth: String = "", onSaved: (() -> Unit)? = null) {
+        val targetBinding = DialogSetTargetBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setView(targetBinding.root)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        targetBinding.tvSetTargetEmployee.text = "${user.name} (ID: ${user.employeeId})"
+
+        val periodOptions = listOf("Monthly Target (All Months)") + monthsList
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, periodOptions)
+        targetBinding.spinnerTargetMonth.adapter = spinnerAdapter
+
+        if (initialMonth.isNotBlank()) {
+            val idx = periodOptions.indexOfFirst { it.equals(initialMonth, ignoreCase = true) }
+            if (idx >= 0) targetBinding.spinnerTargetMonth.setSelection(idx)
+        }
+
+        if (user.monthlyTarget > 0) {
+            targetBinding.etTargetCards.setText(user.monthlyTarget.toString())
+        }
+
+        targetBinding.btnCancelTarget.setOnClickListener { dialog.dismiss() }
+
+        targetBinding.btnSaveTarget.setOnClickListener {
+            val targetStr = targetBinding.etTargetCards.text.toString().trim()
+            val targetVal = targetStr.toIntOrNull()
+            if (targetVal == null || targetVal < 0) {
+                targetBinding.tilTargetCards.error = "Please enter a valid target count"
+                return@setOnClickListener
+            }
+
+            targetBinding.tilTargetCards.error = null
+            val selectedPeriod = periodOptions[targetBinding.spinnerTargetMonth.selectedItemPosition]
+            val monthToSave = if (selectedPeriod.startsWith("Monthly Target")) "General" else selectedPeriod
+
+            targetBinding.btnSaveTarget.isEnabled = false
+            TargetUtils.saveTarget(
+                employeeId = user.employeeId,
+                employeeName = user.name,
+                month = monthToSave,
+                targetCards = targetVal,
+                adminName = userName.ifBlank { "Admin" },
+                onSuccess = {
+                    Toast.makeText(this, "Target set to $targetVal cards for ${user.name}", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                    updateTeamTargetOverview()
+                    onSaved?.invoke()
+                },
+                onFailure = { err ->
+                    targetBinding.btnSaveTarget.isEnabled = true
+                    Toast.makeText(this, "Failed to save target: ${err.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        dialog.show()
+    }
+
+    private fun showUserTargetDetailsDialog(user: User) {
+        val detailsBinding = com.performance.tracker.databinding.DialogUserTargetDetailsBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setView(detailsBinding.root)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        detailsBinding.tvUserTargetDetailsTitle.text = "${user.name}'s Target & Progress"
+        detailsBinding.tvUserTargetDetailsSubtitle.text = "ID: ${user.employeeId} | ${user.branch.ifBlank { user.displayDepartment }}"
+
+        detailsBinding.btnCloseUserTargetDetails.setOnClickListener { dialog.dismiss() }
+
+        val currentMonthName = SimpleDateFormat("MMMM", Locale.US).format(Date())
+        detailsBinding.tvDetailCurrentMonthName.text = "$currentMonthName Target"
+
+        val target = user.monthlyTarget
+        val currentAchieved = TargetUtils.countCards(allReports, user.employeeId, currentMonthName)
+        val currentRate = TargetUtils.calculateAchievementRate(currentAchieved, target)
+
+        detailsBinding.tvDetailCurrentTargetCount.text = "Target: $target Cards"
+        detailsBinding.tvDetailCurrentAchievedCount.text = "Achieved: $currentAchieved Cards"
+        detailsBinding.tvDetailCurrentAchievementPercent.text = TargetUtils.formatAchievementRate(currentAchieved, target)
+
+        val currentColor = TargetUtils.getAchievementColor(currentAchieved, target)
+        detailsBinding.tvDetailCurrentAchievementPercent.setTextColor(currentColor)
+        detailsBinding.progressDetailCurrent.progress = currentRate.toInt().coerceIn(0, 100)
+        detailsBinding.progressDetailCurrent.setIndicatorColor(currentColor)
+
+        val monthlyItems = monthsList.map { m ->
+            val ach = TargetUtils.countCards(allReports, user.employeeId, m)
+            val r = TargetUtils.calculateAchievementRate(ach, target)
+            com.performance.tracker.adapter.MonthTargetItem(m, target, ach, r)
+        }
+
+        val monthAdapter = com.performance.tracker.adapter.UserTargetMonthAdapter(monthlyItems)
+        detailsBinding.recyclerUserTargetMonths.layoutManager = LinearLayoutManager(this)
+        detailsBinding.recyclerUserTargetMonths.adapter = monthAdapter
+
+        dialog.show()
     }
 }

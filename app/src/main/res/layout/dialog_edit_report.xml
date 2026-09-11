@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
      xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="wrap_content"
      android:layout_width="match_parent"
      android:background="@color/surface"
@@ -10,45 +11,94 @@
     <TextView
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:layout_marginBottom="16dp"
-         android:textSize="18sp"
+         android:textSize="20sp"
          android:textColor="@color/text_primary"
          android:text="Edit Performance Record"
          android:textStyle="bold" />
 
-    <EditText
-         android:layout_height="50dp"
+    <TextView
+         android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:layout_marginBottom="12dp"
-         android:background="@drawable/bg_edittext_simple"
-         android:paddingHorizontal="16dp"
-         android:textColor="@color/text_primary"
-         android:textColorHint="@color/text_muted"
-         android:hint="Applicant Name"
-         android:inputType="textPersonName"
-         android:id="@+id/etEditApplicant" />
+         android:layout_marginTop="4dp"
+         android:layout_marginBottom="16dp"
+         android:textSize="13sp"
+         android:textColor="@color/text_secondary"
+         android:text="Update applicant, account or limit amount" />
 
-    <EditText
-         android:layout_height="50dp"
-         android:layout_width="match_parent"
-         android:layout_marginBottom="12dp"
-         android:background="@drawable/bg_edittext_simple"
-         android:paddingHorizontal="16dp"
-         android:textColor="@color/text_primary"
-         android:textColorHint="@color/text_muted"
-         android:hint="Account No (906)"
-         android:inputType="number"
-         android:id="@+id/etEditAccount" />
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/CustomOutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="Applicant Name">
 
-    <EditText
-         android:layout_height="50dp"
-         android:layout_width="match_parent"
-         android:background="@drawable/bg_edittext_simple"
-         android:paddingHorizontal="16dp"
-         android:textColor="@color/text_primary"
-         android:textColorHint="@color/text_muted"
-         android:hint="Limit"
-         android:inputType="number"
-         android:id="@+id/etEditLimit" />
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEditApplicant"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/CustomOutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:hint="Account No (906)">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEditAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/CustomOutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="Limit Amount">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEditLimit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelEditRecord"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="Cancel"
+            android:textColor="@color/text_secondary"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/card_stroke" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveEditRecord"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="Update"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary"
+            app:cornerRadius="12dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

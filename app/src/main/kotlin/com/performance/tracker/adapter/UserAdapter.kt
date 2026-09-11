@@ -24,6 +24,7 @@ class UserAdapter(
     override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
         val user = list[position]
         holder.binding.apply {
+            com.performance.tracker.util.ImageUtils.loadProfileImage(user.profileImage, ivUserAvatar)
             tvUserName.text = user.name
             tvUserId.text = "ID: ${user.employeeId}"
             tvUserLocation.text = "Branch: ${user.branch} | Zone: ${user.zone}"

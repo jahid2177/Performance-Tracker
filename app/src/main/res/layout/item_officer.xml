@@ -19,6 +19,26 @@
          android:padding="16dp"
          android:orientation="horizontal">
 
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="14dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/surface"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
+
+            <ImageView
+                android:id="@+id/ivOfficerAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_person"
+                app:tint="@color/primary"
+                android:padding="8dp" />
+        </com.google.android.material.card.MaterialCardView>
+
         <LinearLayout
              android:layout_height="wrap_content"
              android:layout_width="0dp"
@@ -28,30 +48,84 @@
             <TextView
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
-                 android:textSize="17sp"
+                 android:textSize="16sp"
                  android:textColor="@color/text_primary"
                  android:id="@+id/tvOfficerName"
                  android:text="Employee Name"
                  android:textStyle="bold" />
 
-            <TextView
-                 android:layout_height="wrap_content"
-                 android:layout_width="wrap_content"
-                 android:textSize="14sp"
-                 android:textColor="@color/text_secondary"
-                 android:layout_marginTop="4dp"
-                 android:id="@+id/tvOfficerId"
-                 android:text="ID: 123456789123"
-                 android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/tvOfficerDepartmentBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_green"
+                    android:textColor="@color/badge_green_icon"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="Department"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:textSize="13sp"
+                     android:textColor="@color/text_secondary"
+                     android:id="@+id/tvOfficerId"
+                     android:text="ID: 123456789123" />
+            </LinearLayout>
 
             <TextView
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
-                 android:textSize="13sp"
+                 android:textSize="12sp"
                  android:textColor="@color/text_muted"
-                 android:layout_marginTop="2dp"
+                 android:layout_marginTop="3dp"
                  android:id="@+id/tvBranchZone"
                  android:text="Branch: branch_name | Zone: zone_name" />
+
+            <!-- Target & Achievement Badge -->
+            <LinearLayout
+                android:id="@+id/layoutOfficerTargetAchievement"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="5dp">
+
+                <TextView
+                    android:id="@+id/tvOfficerTargetBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_blue"
+                    android:textColor="@color/badge_blue_icon"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="Target: 0"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvOfficerAchievementBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_mint"
+                    android:textColor="@color/badge_mint_icon"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="0.0% Achieved" />
+            </LinearLayout>
 
         </LinearLayout>
 

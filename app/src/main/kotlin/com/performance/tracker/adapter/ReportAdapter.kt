@@ -13,7 +13,8 @@ import java.util.Locale
 
 class ReportAdapter(
     private var list: List<ReportSummary>,
-    private val isAdmin: Boolean = false,
+    private val canEdit: Boolean = false,
+    private val canDelete: Boolean = false,
     private val onCardClick: ((ReportSummary) -> Unit)? = null,
     private val onActionClick: ((ReportSummary, String) -> Unit)? = null
 ) : RecyclerView.Adapter<ReportAdapter.ReportViewHolder>() {
@@ -48,13 +49,17 @@ class ReportAdapter(
             // পুরো কার্ডে ক্লিক করলে বিস্তারিত পেজে যাবে
             root.setOnClickListener { onCardClick?.invoke(item) }
 
-            if (isAdmin) {
+            if (canEdit) {
                 btnEdit.visibility = View.VISIBLE
-                btnDelete.visibility = View.VISIBLE
                 btnEdit.setOnClickListener { onActionClick?.invoke(item, "EDIT") }
-                btnDelete.setOnClickListener { onActionClick?.invoke(item, "DELETE") }
             } else {
                 btnEdit.visibility = View.GONE
+            }
+
+            if (canDelete) {
+                btnDelete.visibility = View.VISIBLE
+                btnDelete.setOnClickListener { onActionClick?.invoke(item, "DELETE") }
+            } else {
                 btnDelete.visibility = View.GONE
             }
         }

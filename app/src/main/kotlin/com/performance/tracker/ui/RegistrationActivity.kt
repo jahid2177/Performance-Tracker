@@ -5,20 +5,46 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.firestore.FirebaseFirestore
 import com.performance.tracker.databinding.ActivityRegistrationBinding
 import com.performance.tracker.model.User
+import com.performance.tracker.util.ImageUtils
 import com.performance.tracker.viewmodel.MainViewModel
 
 class RegistrationActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRegistrationBinding
     private val viewModel: MainViewModel by viewModels()
+    private val db = FirebaseFirestore.getInstance()
+    private val salesManagersList = mutableListOf<String>()
+    private var selectedProfileImageBase64: String = ""
+
+    private val pickMediaLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            val base64 = ImageUtils.uriToCompressedBase64(this, uri)
+            if (base64 != null) {
+                selectedProfileImageBase64 = base64
+                ImageUtils.loadProfileImage(base64, binding.ivRegAvatar)
+            } else {
+                Toast.makeText(this, "Failed to process photo", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Photo pickers
+        val onPhotoClick = View.OnClickListener {
+            pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+        binding.cardRegAvatar.setOnClickListener(onPhotoClick)
+        binding.cardRegCameraBadge.setOnClickListener(onPhotoClick)
 
         // 🔥 ১. AGM এবং DGM বাদ দিয়ে স্পিনার আপডেট করা হলো
         val roles = arrayOf("USER", "Sales Manager")
@@ -39,11 +65,22 @@ class RegistrationActivity : AppCompatActivity() {
             }
         }
 
+        // 🔥 ৩. ডাইনামিকভাবে ফায়ারবেস থেকে সেলস ম্যানেজারদের লিস্ট লোড
+        loadSalesManagers()
+
+        binding.etRegManager.setOnClickListener {
+            binding.etRegManager.showDropDown()
+        }
+        binding.etRegManager.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) binding.etRegManager.showDropDown()
+        }
+
         binding.btnCompleteReg.setOnClickListener {
             // কমন ইনপুট নেওয়া
             val empId = binding.etRegId.text.toString().trim()
             val name = binding.etRegName.text.toString().trim()
             val mobile = binding.etMobile.text.toString().trim()
+            val officialNumber = binding.etOfficialNumber.text.toString().trim()
             val password = binding.etRegPassword.text.toString().trim()
             val selectedRole = binding.autoCompleteRole.text.toString().trim()
 
@@ -88,11 +125,13 @@ class RegistrationActivity : AppCompatActivity() {
                 branch = branch,
                 salesManager = manager,
                 mobile = mobile,
+                officialNumber = officialNumber,
                 zone = zone,
                 password = password, 
                 role = selectedRole,
-                status = accountStatus, // স্ট্যাটাস যুক্ত করা হলো
-                createdAt = System.currentTimeMillis()
+                status = accountStatus,
+                createdAt = System.currentTimeMillis(),
+                profileImage = selectedProfileImageBase64
             )
 
             viewModel.registerUser(newUser)
@@ -103,6 +142,9 @@ class RegistrationActivity : AppCompatActivity() {
                 setLoading(false)
                 Toast.makeText(this, "Registration Successful!", Toast.LENGTH_SHORT).show()
                 
+                // Save credentials so Login page already has them filled
+                com.performance.tracker.util.SessionManager.saveCredentials(this, user.employeeId, user.password, true)
+
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
@@ -116,6 +158,35 @@ class RegistrationActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private fun loadSalesManagers() {
+        db.collection("employees")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                salesManagersList.clear()
+                val managers = snapshot.documents.filter { doc ->
+                    val role = doc.getString("role") ?: ""
+                    role.equals("Sales Manager", ignoreCase = true)
+                }.mapNotNull { doc ->
+                    val name = doc.getString("name")?.trim() ?: ""
+                    if (name.isNotEmpty()) name else null
+                }.distinct()
+
+                salesManagersList.addAll(managers)
+
+                if (salesManagersList.isNotEmpty()) {
+                    val managerAdapter = ArrayAdapter(
+                        this@RegistrationActivity,
+                        android.R.layout.simple_dropdown_item_1line,
+                        salesManagersList
+                    )
+                    binding.etRegManager.setAdapter(managerAdapter)
+                }
+            }
+            .addOnFailureListener {
+                // Ignore silently, allows manual entry
+            }
     }
 
     private fun setLoading(isLoading: Boolean) {

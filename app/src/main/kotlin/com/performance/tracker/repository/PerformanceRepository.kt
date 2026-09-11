@@ -16,7 +16,10 @@ class PerformanceRepository {
             
             val snapshot = db.collection("employees").document(employeeId).get().await()
             if (snapshot.exists()) {
-                snapshot.toObject(User::class.java)
+                val user = snapshot.toObject(User::class.java)
+                if (user != null) {
+                    if (user.employeeId.isEmpty()) user.copy(employeeId = snapshot.id) else user
+                } else null
             } else {
                 null
             }

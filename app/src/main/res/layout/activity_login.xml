@@ -114,6 +114,17 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cbRememberMe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:checked="true"
+                android:text="Remember ID &amp; Password"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                app:buttonTint="@color/primary" />
+
             <com.google.android.material.button.MaterialButton
                  android:layout_height="52dp"
                  android:layout_width="match_parent"

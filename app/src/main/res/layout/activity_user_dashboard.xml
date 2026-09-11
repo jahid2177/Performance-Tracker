@@ -36,15 +36,15 @@
              app:strokeColor="@color/card_stroke"
              app:cardBackgroundColor="@color/surface"
              android:clickable="true"
-             android:focusable="true">
+             android:focusable="true"
+             android:id="@+id/btnUserSettings">
 
             <ImageView
-                 android:layout_height="20dp"
-                 android:layout_width="20dp"
+                 android:layout_height="22dp"
+                 android:layout_width="22dp"
                  android:layout_gravity="center"
-                 android:src="@drawable/ic_logout"
-                 app:tint="@color/text_primary"
-                 android:id="@+id/btnExit" />
+                 android:src="@drawable/ic_settings"
+                 app:tint="@color/text_primary" />
 
         </com.google.android.material.card.MaterialCardView>
 
@@ -221,6 +221,133 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- Section: TARGET & PERFORMANCE -->
+                <TextView
+                     style="@style/SectionHeader"
+                     android:layout_marginTop="24dp"
+                     android:text="TARGET &amp; PERFORMANCE" />
+
+                <!-- Card Group: Target & Achievement -->
+                <com.google.android.material.card.MaterialCardView
+                     android:layout_height="wrap_content"
+                     android:layout_width="match_parent"
+                     app:cardElevation="0dp"
+                     app:strokeColor="@color/card_stroke"
+                     app:strokeWidth="1dp"
+                     app:cardBackgroundColor="@color/surface_card"
+                     app:cardCornerRadius="18dp"
+                     android:clickable="true"
+                     android:focusable="true"
+                     android:foreground="?attr/selectableItemBackground"
+                     android:id="@+id/cardUserTargetAchievement">
+
+                    <LinearLayout
+                         android:layout_height="wrap_content"
+                         android:layout_width="match_parent"
+                         android:orientation="vertical"
+                         android:padding="16dp">
+
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal">
+
+                            <!-- Mint Target Badge -->
+                            <FrameLayout
+                                 android:layout_height="44dp"
+                                 android:layout_width="44dp"
+                                 android:background="@drawable/bg_badge_mint">
+
+                                <ImageView
+                                     android:layout_height="22dp"
+                                     android:layout_width="22dp"
+                                     android:layout_gravity="center"
+                                     android:src="@drawable/ic_target"
+                                     app:tint="@color/badge_mint_icon" />
+
+                            </FrameLayout>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_marginStart="14dp"
+                                 android:layout_weight="1"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="16sp"
+                                     android:textColor="@color/text_primary"
+                                     android:id="@+id/tvUserTargetMonthTitle"
+                                     android:text="Monthly Target"
+                                     android:textStyle="bold" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="13sp"
+                                     android:layout_marginTop="2dp"
+                                     android:textColor="@color/text_secondary"
+                                     android:id="@+id/tvUserTargetSummary"
+                                     android:text="Target: 0 | Achieved: 0 cards" />
+
+                            </LinearLayout>
+
+                            <TextView
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="wrap_content"
+                                 android:textSize="13sp"
+                                 android:textStyle="bold"
+                                 android:paddingHorizontal="10dp"
+                                 android:paddingVertical="4dp"
+                                 android:background="@drawable/bg_badge_green"
+                                 android:textColor="@color/badge_green_icon"
+                                 android:id="@+id/tvUserAchievementPercentBadge"
+                                 android:text="0.0%" />
+
+                        </LinearLayout>
+
+                        <!-- Progress indicator -->
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progressUserTarget"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="8dp"
+                            app:trackColor="#E0E0E0"
+                            app:indicatorColor="@color/primary"
+                            android:progress="0"
+                            android:max="100" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="10dp">
+
+                            <TextView
+                                android:id="@+id/tvUserTargetMotivation"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:text="Tap to view monthly target breakdown" />
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/ic_chevron_right"
+                                app:tint="@color/chevron_color" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- Section: REPORTS & EVALUATION -->
                 <TextView
                      style="@style/SectionHeader"
@@ -358,6 +485,69 @@
                                      android:layout_marginTop="2dp"
                                      android:textColor="@color/text_secondary"
                                      android:text="Top performers leaderboard" />
+
+                            </LinearLayout>
+
+                            <ImageView
+                                 android:layout_height="20dp"
+                                 android:layout_width="20dp"
+                                 android:src="@drawable/ic_chevron_right"
+                                 app:tint="@color/chevron_color" />
+
+                        </LinearLayout>
+
+                        <View style="@style/Divider" />
+
+                        <!-- Option: Settings -->
+                        <LinearLayout
+                             android:layout_height="wrap_content"
+                             android:layout_width="match_parent"
+                             android:background="?attr/selectableItemBackground"
+                             android:clickable="true"
+                             android:focusable="true"
+                             android:gravity="center_vertical"
+                             android:padding="16dp"
+                             android:orientation="horizontal"
+                             android:id="@+id/cardUserSettings">
+
+                            <com.google.android.material.card.MaterialCardView
+                                 android:layout_height="44dp"
+                                 android:layout_width="44dp"
+                                 app:cardCornerRadius="12dp"
+                                 app:cardElevation="0dp"
+                                 app:cardBackgroundColor="@color/badge_grey_bg">
+
+                                <ImageView
+                                     android:layout_height="22dp"
+                                     android:layout_width="22dp"
+                                     android:layout_gravity="center"
+                                     android:src="@drawable/ic_settings"
+                                     app:tint="@color/badge_grey_icon" />
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <LinearLayout
+                                 android:layout_height="wrap_content"
+                                 android:layout_width="0dp"
+                                 android:layout_marginStart="14dp"
+                                 android:layout_weight="1"
+                                 android:orientation="vertical">
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="16sp"
+                                     android:textColor="@color/text_primary"
+                                     android:text="Settings"
+                                     android:textStyle="bold" />
+
+                                <TextView
+                                     android:layout_height="wrap_content"
+                                     android:layout_width="wrap_content"
+                                     android:textSize="13sp"
+                                     android:layout_marginTop="2dp"
+                                     android:textColor="@color/text_secondary"
+                                     android:text="Profile, security, app info &amp; exit" />
 
                             </LinearLayout>
 

@@ -21,6 +21,20 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Load saved credentials if Remember Me is enabled
+        val isRemember = com.performance.tracker.util.SessionManager.isRememberMe(this)
+        binding.cbRememberMe.isChecked = isRemember
+        if (isRemember) {
+            val savedId = com.performance.tracker.util.SessionManager.getSavedId(this)
+            val savedPass = com.performance.tracker.util.SessionManager.getSavedPassword(this)
+            if (savedId.isNotEmpty()) {
+                binding.etId.setText(savedId)
+            }
+            if (savedPass.isNotEmpty()) {
+                binding.etPassword.setText(savedPass)
+            }
+        }
+
         binding.btnLogin.setOnClickListener {
             val id = binding.etId.text.toString().trim()
             val pass = binding.etPassword.text.toString().trim()
@@ -48,13 +62,14 @@ class LoginActivity : AppCompatActivity() {
         viewModel.userState.observe(this) { user ->
             if (!isChecking) return@observe
 
+            val inputId = binding.etId.text.toString().trim()
             val inputPass = binding.etPassword.text.toString().trim()
 
             if (user != null) {
                 if (user.password == inputPass) {
                     
                     // 🔥 ১. স্ট্যাটাস চেক করা (Admin হলে কখনোই ব্লক করবে না)
-                    if (user.status == "Pending" && user.role != "ADMIN") {
+                    if (user.status == "Pending" && !user.role.equals("ADMIN", ignoreCase = true)) {
                         setLoading(false)
                         isChecking = false
                         Toast.makeText(this, "Your account is waiting for Admin approval.", Toast.LENGTH_LONG).show()
@@ -65,14 +80,28 @@ class LoginActivity : AppCompatActivity() {
                     setLoading(false)
                     isChecking = false
 
+                    // Ensure user ID is not empty
+                    val effectiveId = if (user.employeeId.isNotEmpty()) user.employeeId else inputId
+
+                    // Save or clear remembered credentials based on checkbox
+                    if (binding.cbRememberMe.isChecked) {
+                        com.performance.tracker.util.SessionManager.saveCredentials(this, effectiveId, inputPass, true)
+                    } else {
+                        com.performance.tracker.util.SessionManager.clearCredentials(this)
+                    }
+
+                    // Save session
+                    com.performance.tracker.util.SessionManager.saveUser(this, effectiveId, user.role, user.name)
+
                     if (user.role == "ADMIN" || user.role == "AGM" || user.role == "DGM" || user.role == "Sales Manager") {
                         val intent = Intent(this, AdminDashboardActivity::class.java)
                         intent.putExtra("USER_ROLE", user.role) 
                         intent.putExtra("USER_NAME", user.name) 
+                        intent.putExtra("USER_ID", effectiveId)
                         startActivity(intent)
                     } else {
                         val intent = Intent(this, UserDashboardActivity::class.java)
-                        intent.putExtra("USER_ID", user.employeeId)
+                        intent.putExtra("USER_ID", effectiveId)
                         intent.putExtra("USER_NAME", user.name)
                         startActivity(intent)
                     }
