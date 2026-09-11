@@ -32,6 +32,7 @@ class SettingsActivity : AppCompatActivity() {
         currentUserRole = intent.getStringExtra("USER_ROLE") ?: SessionManager.getUserRole(this)
         currentUserName = intent.getStringExtra("USER_NAME") ?: SessionManager.getUserName(this)
 
+        updateAdminSectionVisibility()
         setupListeners()
     }
 
@@ -40,11 +41,18 @@ class SettingsActivity : AppCompatActivity() {
         loadUserData()
     }
 
+    private fun updateAdminSectionVisibility() {
+        val isAdmin = currentUserRole.equals("ADMIN", ignoreCase = true)
+        binding.layoutAdminSection.visibility = if (isAdmin) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
     private fun loadUserData() {
         if (currentUserId.isEmpty()) {
             binding.tvSettingsName.text = currentUserName.ifEmpty { "User" }
             binding.tvSettingsEmpId.text = "Role: $currentUserRole"
             binding.tvSettingsRoleBadge.text = "Role: $currentUserRole"
+            updateAdminSectionVisibility()
+            checkEmailAndRedDot(SessionManager.getUserEmail(this))
             return
         }
 
@@ -57,27 +65,62 @@ class SettingsActivity : AppCompatActivity() {
                     binding.tvSettingsRoleBadge.text = "Role: ${user.role}"
                     ImageUtils.loadProfileImage(user.profileImage, binding.ivSettingsAvatar)
 
-                    // Update session name if changed
+                    // Update session
                     if (user.name.isNotEmpty()) {
                         currentUserName = user.name
                         currentUserRole = user.role
+                        SessionManager.saveUser(this, user.employeeId, user.role, user.name, user.email)
                     }
+                    updateAdminSectionVisibility()
+                    checkEmailAndRedDot(user.email)
                 } else {
                     binding.tvSettingsName.text = currentUserName.ifEmpty { "User" }
                     binding.tvSettingsEmpId.text = "ID: $currentUserId"
                     binding.tvSettingsRoleBadge.text = "Role: $currentUserRole"
+                    updateAdminSectionVisibility()
+                    checkEmailAndRedDot(SessionManager.getUserEmail(this))
                 }
             }
             .addOnFailureListener {
                 binding.tvSettingsName.text = currentUserName.ifEmpty { "User" }
                 binding.tvSettingsEmpId.text = "ID: $currentUserId"
                 binding.tvSettingsRoleBadge.text = "Role: $currentUserRole"
+                updateAdminSectionVisibility()
+                checkEmailAndRedDot(SessionManager.getUserEmail(this))
             }
+    }
+
+    private fun checkEmailAndRedDot(email: String) {
+        val hasEmail = email.trim().isNotEmpty()
+        if (hasEmail) {
+            binding.cardEmailRequiredWarning.visibility = android.view.View.GONE
+            binding.viewProfileHeaderRedDot.visibility = android.view.View.GONE
+            binding.viewProfileOptionRedDot.visibility = android.view.View.GONE
+            binding.tvProfileOptionSubtitle.text = "View & update personal details, email, official number"
+        } else {
+            binding.cardEmailRequiredWarning.visibility = android.view.View.VISIBLE
+            binding.viewProfileHeaderRedDot.visibility = android.view.View.VISIBLE
+            binding.viewProfileOptionRedDot.visibility = android.view.View.VISIBLE
+            binding.tvProfileOptionSubtitle.text = "⚠️ Email address missing - Tap to update for password recovery"
+        }
     }
 
     private fun setupListeners() {
         binding.btnBack.setOnClickListener {
             finish()
+        }
+
+        // Biometric Switch
+        binding.switchBiometric.isChecked = SessionManager.isBiometricEnabled(this)
+        binding.switchBiometric.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !com.performance.tracker.util.BiometricHelper.isBiometricAvailable(this)) {
+                binding.switchBiometric.isChecked = false
+                Toast.makeText(this, "Biometric authentication is not supported or set up on this device.", Toast.LENGTH_SHORT).show()
+                return@setOnCheckedChangeListener
+            }
+            SessionManager.setBiometricEnabled(this, isChecked)
+            val msg = if (isChecked) "Biometric login enabled!" else "Biometric login disabled."
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         }
 
         // 1. My Profile option
@@ -96,20 +139,121 @@ class SettingsActivity : AppCompatActivity() {
             showChangePasswordDialog()
         }
 
-        // 3. About Application
+        // 3. Admin: Create User option (Sales Manager, AGM, DGM)
+        binding.cardSettingsCreateUser.setOnClickListener {
+            showCreateUserDialog()
+        }
+
+        // 4. About Application
         binding.cardSettingsAbout.setOnClickListener {
             showAboutDialog()
         }
 
-        // 4. Help & Support
+        // 5. Help & Support
         binding.cardSettingsSupport.setOnClickListener {
             showSupportDialog()
         }
 
-        // 5. Exit / Logout option
+        // 6. Exit / Logout option
         binding.cardSettingsExit.setOnClickListener {
             showLogoutConfirmationDialog()
         }
+    }
+
+    private fun showCreateUserDialog() {
+        val dialogBinding = com.performance.tracker.databinding.DialogAdminCreateUserBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val roles = arrayOf("Sales Manager", "AGM", "DGM")
+        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, roles)
+        dialogBinding.autoCompleteCreateRole.setAdapter(adapter)
+        dialogBinding.autoCompleteCreateRole.setText("Sales Manager", false)
+
+        dialogBinding.btnCloseCreateUser.setOnClickListener { dialog.dismiss() }
+        dialogBinding.btnCancelCreateUser.setOnClickListener { dialog.dismiss() }
+
+        dialogBinding.btnSubmitCreateUser.setOnClickListener {
+            val selectedRole = dialogBinding.autoCompleteCreateRole.text.toString().trim()
+            val empId = dialogBinding.etCreateEmpId.text.toString().trim()
+            val name = dialogBinding.etCreateName.text.toString().trim()
+            val mobile = dialogBinding.etCreateMobile.text.toString().trim()
+            val officialNumber = dialogBinding.etCreateOfficialNumber.text.toString().trim()
+            val branch = dialogBinding.etCreateBranch.text.toString().trim()
+            val password = dialogBinding.etCreatePassword.text.toString().trim()
+
+            if (selectedRole.isEmpty() || !roles.contains(selectedRole)) {
+                Toast.makeText(this, "Please select a valid role (Sales Manager, AGM, or DGM)", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (empId.length != 12) {
+                dialogBinding.etCreateEmpId.error = "Employee ID must be 12 digits"
+                return@setOnClickListener
+            }
+
+            if (name.isEmpty()) {
+                dialogBinding.etCreateName.error = "Name is required"
+                return@setOnClickListener
+            }
+
+            if (password.length < 6) {
+                dialogBinding.etCreatePassword.error = "Minimum 6 characters required"
+                return@setOnClickListener
+            }
+
+            dialogBinding.btnSubmitCreateUser.isEnabled = false
+            dialogBinding.btnSubmitCreateUser.text = "Creating..."
+
+            // Check if user already exists in Firestore
+            db.collection("employees").document(empId).get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        dialogBinding.btnSubmitCreateUser.isEnabled = true
+                        dialogBinding.btnSubmitCreateUser.text = "Create User"
+                        dialogBinding.etCreateEmpId.error = "Employee ID already exists"
+                        Toast.makeText(this, "An account with Employee ID $empId already exists!", Toast.LENGTH_LONG).show()
+                    } else {
+                        val newUser = User(
+                            employeeId = empId,
+                            name = name,
+                            branch = branch.ifBlank { "N/A" },
+                            salesManager = "", // No sales manager for management roles
+                            mobile = mobile,
+                            officialNumber = officialNumber,
+                            zone = branch.ifBlank { "N/A" },
+                            password = password,
+                            role = selectedRole,
+                            status = "Approved",
+                            department = selectedRole,
+                            createdAt = System.currentTimeMillis(),
+                            monthlyTarget = 0,
+                            profileImage = ""
+                        )
+
+                        db.collection("employees").document(empId)
+                            .set(newUser)
+                            .addOnSuccessListener {
+                                Toast.makeText(this, "Successfully created $selectedRole ID: $empId", Toast.LENGTH_LONG).show()
+                                dialog.dismiss()
+                            }
+                            .addOnFailureListener { e ->
+                                dialogBinding.btnSubmitCreateUser.isEnabled = true
+                                dialogBinding.btnSubmitCreateUser.text = "Create User"
+                                Toast.makeText(this, "Failed to create user: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    dialogBinding.btnSubmitCreateUser.isEnabled = true
+                    dialogBinding.btnSubmitCreateUser.text = "Create User"
+                    Toast.makeText(this, "Verification failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+
+        dialog.show()
     }
 
     private fun showChangePasswordDialog() {
@@ -138,13 +282,35 @@ class SettingsActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
+                // Update Firestore for current user
                 db.collection("employees").document(currentUserId)
                     .update("password", newPass)
                     .addOnSuccessListener {
                         Toast.makeText(this, "Password updated successfully!", Toast.LENGTH_SHORT).show()
+                        if (SessionManager.isRememberMe(this) && SessionManager.getSavedId(this) == currentUserId) {
+                            SessionManager.saveCredentials(this, currentUserId, newPass, true)
+                        }
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to update password: ${e.message}", Toast.LENGTH_SHORT).show()
+                        // Fallback check by employeeId field in case doc.id differs
+                        db.collection("employees").whereEqualTo("employeeId", currentUserId).get()
+                            .addOnSuccessListener { qs ->
+                                if (!qs.isEmpty) {
+                                    val targetDoc = qs.documents.first().id
+                                    db.collection("employees").document(targetDoc).update("password", newPass)
+                                        .addOnSuccessListener {
+                                            Toast.makeText(this, "Password updated successfully!", Toast.LENGTH_SHORT).show()
+                                            if (SessionManager.isRememberMe(this) && SessionManager.getSavedId(this) == currentUserId) {
+                                                SessionManager.saveCredentials(this, currentUserId, newPass, true)
+                                            }
+                                        }
+                                } else {
+                                    Toast.makeText(this, "Failed to update password: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(this, "Failed to update password: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
                     }
                 dialog.dismiss()
             }

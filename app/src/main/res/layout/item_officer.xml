@@ -124,7 +124,21 @@
                     android:textStyle="bold"
                     android:paddingHorizontal="7dp"
                     android:paddingVertical="2dp"
-                    android:text="0.0% Achieved" />
+                    android:text="0.0% Achieved"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvOfficerThresholdAlert"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_red"
+                    android:textColor="@color/badge_red_icon"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="⚠️ &lt;50% Alert"
+                    android:visibility="gone" />
             </LinearLayout>
 
         </LinearLayout>

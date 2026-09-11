@@ -67,5 +67,12 @@
         <item name="android:background">@color/divider_color</item>
         <item name="android:layout_marginVertical">8dp</item>
     </style>
+    <style name="Theme.FullScreenDialog" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">#F8FAFC</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    </style>
 </resources>
 

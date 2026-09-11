@@ -4,19 +4,20 @@
      xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="wrap_content"
      android:layout_width="match_parent"
-     android:weightSum="10"
      android:background="@color/surface_card"
+     android:gravity="center_vertical"
      android:orientation="horizontal">
 
     <TextView
-         android:layout_height="match_parent"
-         android:layout_width="0dp"
+         android:id="@+id/tvSlNo"
+         android:layout_height="wrap_content"
+         android:layout_width="48dp"
          android:gravity="center"
          android:padding="10dp"
          android:textSize="14sp"
          android:textColor="@color/text_secondary"
-         android:layout_weight="1.5"
-         android:id="@+id/tvSlNo" />
+         android:maxLines="1"
+         android:singleLine="true" />
 
     <View
          android:layout_height="match_parent"
@@ -24,16 +25,16 @@
          android:background="@color/divider_color" />
 
     <TextView
-         android:layout_height="match_parent"
-         android:layout_width="0dp"
+         android:id="@+id/tvApplicantName"
+         android:layout_height="wrap_content"
+         android:layout_width="210dp"
          android:gravity="center_vertical"
          android:padding="10dp"
-         android:ellipsize="end"
          android:textSize="14sp"
          android:textColor="@color/text_primary"
-         android:maxLines="2"
-         android:layout_weight="3.5"
-         android:id="@+id/tvApplicantName" />
+         android:maxLines="1"
+         android:singleLine="true"
+         android:ellipsize="none" />
 
     <View
          android:layout_height="match_parent"
@@ -41,14 +42,16 @@
          android:background="@color/divider_color" />
 
     <TextView
-         android:layout_height="match_parent"
-         android:layout_width="0dp"
+         android:id="@+id/tvAccountNo"
+         android:layout_height="wrap_content"
+         android:layout_width="165dp"
          android:gravity="center"
          android:padding="10dp"
          android:textSize="14sp"
          android:textColor="@color/text_secondary"
-         android:layout_weight="3"
-         android:id="@+id/tvAccountNo" />
+         android:maxLines="1"
+         android:singleLine="true"
+         android:ellipsize="none" />
 
     <View
          android:layout_height="match_parent"
@@ -56,20 +59,22 @@
          android:background="@color/divider_color" />
 
     <TextView
-         android:layout_height="match_parent"
-         android:layout_width="0dp"
+         android:id="@+id/tvLimit"
+         android:layout_height="wrap_content"
+         android:layout_width="135dp"
          android:gravity="center|end"
          android:padding="10dp"
          android:textSize="14sp"
          android:textColor="@color/primary"
-         android:layout_weight="2"
-         android:id="@+id/tvLimit"
-         android:textStyle="bold" />
+         android:textStyle="bold"
+         android:maxLines="1"
+         android:singleLine="true"
+         android:ellipsize="none" />
 
     <ImageView
          android:id="@+id/ivEditRow"
-         android:layout_height="match_parent"
-         android:layout_width="28dp"
+         android:layout_height="36dp"
+         android:layout_width="36dp"
          android:padding="6dp"
          android:src="@android:drawable/ic_menu_edit"
          app:tint="@color/primary"

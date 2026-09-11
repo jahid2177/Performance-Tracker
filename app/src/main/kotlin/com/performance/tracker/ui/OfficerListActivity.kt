@@ -89,9 +89,8 @@ class OfficerListActivity : AppCompatActivity() {
     private fun loadApprovedOfficers() {
         binding.progressBar.visibility = View.VISIBLE 
 
-        // Query USER role officers and support case-insensitive Approved status
+        // Query all employees and filter officers safely (case-insensitive & doc id fallback)
         db.collection("employees") 
-            .whereEqualTo("role", "USER") 
             .get()
             .addOnSuccessListener { snapshot ->
                 binding.progressBar.visibility = View.GONE 
@@ -100,11 +99,13 @@ class OfficerListActivity : AppCompatActivity() {
                 for (doc in snapshot.documents) {
                     val user = doc.toObject(User::class.java)
                     if (user != null) {
-                        val isApproved = user.status.equals("APPROVED", ignoreCase = true) ||
-                                         user.status.equals("Approved", ignoreCase = true) ||
-                                         user.status.isBlank()
-                        if (isApproved) {
-                            allOfficers.add(user)
+                        val effectiveUser = if (user.employeeId.isBlank()) user.copy(employeeId = doc.id) else user
+                        val isOfficer = effectiveUser.role.isBlank() || effectiveUser.role.equals("USER", ignoreCase = true)
+                        val isApproved = effectiveUser.status.isBlank() ||
+                                         effectiveUser.status.equals("APPROVED", ignoreCase = true) ||
+                                         effectiveUser.status.equals("Approved", ignoreCase = true)
+                        if (isOfficer && isApproved) {
+                            allOfficers.add(effectiveUser)
                         }
                     }
                 }
@@ -112,13 +113,17 @@ class OfficerListActivity : AppCompatActivity() {
                 allOfficers.sortBy { it.name.lowercase() }
                 binding.tvTotalBadge.text = "${allOfficers.size} Total"
 
-                setupDepartmentChips()
-                applyFilters()
-
                 db.collection("performance").get()
                     .addOnSuccessListener { perfSnapshot ->
-                        allPerformances = perfSnapshot.toObjects(Performance::class.java)
-                        adapter.notifyDataSetChanged()
+                        allPerformances = perfSnapshot.documents.mapNotNull { doc ->
+                            doc.toObject(Performance::class.java)?.apply { id = doc.id }
+                        }
+                        setupDepartmentChips()
+                        applyFilters()
+                    }
+                    .addOnFailureListener {
+                        setupDepartmentChips()
+                        applyFilters()
                     }
             }
             .addOnFailureListener { exception ->
@@ -129,6 +134,13 @@ class OfficerListActivity : AppCompatActivity() {
 
     private fun setupDepartmentChips() {
         binding.chipGroupDepartments.removeAllViews()
+
+        val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
+        val belowThresholdCount = allOfficers.count { user ->
+            val target = user.monthlyTarget
+            val achieved = TargetUtils.countCards(allPerformances, user.employeeId, currentMonth)
+            user.isTargetEligible && TargetUtils.isBelowThreshold(achieved, target)
+        }
 
         val departments = allOfficers.map { it.displayDepartment.trim() }
             .filter { it.isNotEmpty() && !it.equals("N/A", ignoreCase = true) }
@@ -143,7 +155,17 @@ class OfficerListActivity : AppCompatActivity() {
         )
         binding.chipGroupDepartments.addView(allChip)
 
-        // 2. Department-specific Chips
+        // 2. "<50% Target Alert" Chip (if any exist)
+        if (belowThresholdCount > 0) {
+            val alertChip = createFilterChip(
+                displayText = "⚠️ <50% Target ($belowThresholdCount)",
+                isChecked = selectedDepartment.equals("BELOW_50", ignoreCase = true),
+                deptTag = "BELOW_50"
+            )
+            binding.chipGroupDepartments.addView(alertChip)
+        }
+
+        // 3. Department-specific Chips
         departments.forEach { dept ->
             val count = allOfficers.count { it.displayDepartment.equals(dept, ignoreCase = true) }
             val deptChip = createFilterChip(
@@ -190,6 +212,8 @@ class OfficerListActivity : AppCompatActivity() {
     private fun applyFilters() {
         val query = binding.etSearchOfficers.text?.toString()?.trim()?.lowercase().orEmpty()
         val isAllDept = selectedDepartment.equals("All", ignoreCase = true)
+        val isBelow50Filter = selectedDepartment.equals("BELOW_50", ignoreCase = true)
+        val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
 
         val filtered = allOfficers.filter { user ->
             val matchesQuery = query.isEmpty() ||
@@ -200,11 +224,18 @@ class OfficerListActivity : AppCompatActivity() {
                 user.department.lowercase().contains(query) ||
                 user.salesManager.lowercase().contains(query)
 
-            val matchesDepartment = isAllDept ||
-                user.displayDepartment.equals(selectedDepartment, ignoreCase = true) ||
-                user.branch.equals(selectedDepartment, ignoreCase = true) ||
-                user.zone.equals(selectedDepartment, ignoreCase = true) ||
-                user.department.equals(selectedDepartment, ignoreCase = true)
+            val matchesDepartment = when {
+                isBelow50Filter -> {
+                    val target = user.monthlyTarget
+                    val achieved = TargetUtils.countCards(allPerformances, user.employeeId, currentMonth)
+                    user.isTargetEligible && TargetUtils.isBelowThreshold(achieved, target)
+                }
+                isAllDept -> true
+                else -> user.displayDepartment.equals(selectedDepartment, ignoreCase = true) ||
+                        user.branch.equals(selectedDepartment, ignoreCase = true) ||
+                        user.zone.equals(selectedDepartment, ignoreCase = true) ||
+                        user.department.equals(selectedDepartment, ignoreCase = true)
+            }
 
             matchesQuery && matchesDepartment
         }
@@ -228,7 +259,11 @@ class OfficerListActivity : AppCompatActivity() {
 
             if (hasActiveFilter) {
                 binding.tvEmptyTitle.text = "No Matching Employees"
-                val deptNote = if (!isAllDept) " in '$selectedDepartment'" else ""
+                val deptNote = when {
+                    isBelow50Filter -> " below 50% target threshold"
+                    !isAllDept -> " in '$selectedDepartment'"
+                    else -> ""
+                }
                 val searchNote = if (query.isNotEmpty()) " matching '$query'" else ""
                 binding.tvEmpty.text = "No employees found$searchNote$deptNote. Try a different search keyword or department filter."
                 binding.btnEmptyReset.visibility = View.VISIBLE
@@ -245,14 +280,18 @@ class OfficerListActivity : AppCompatActivity() {
 
     private fun confirmDeleteOfficer(user: User) {
         AlertDialog.Builder(this)
-            .setTitle("Remove Officer")
-            .setMessage("Are you sure you want to remove ${user.name} from the approved list?")
-            .setPositiveButton("Remove") { _, _ ->
+            .setTitle("⚠️ Warning: Delete Employee")
+            .setMessage("Are you sure you want to delete ${user.name} (ID: ${user.employeeId}) from the system?\n\nThis will remove their profile and records permanently.")
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("Yes, Delete") { _, _ ->
                 db.collection("employees").document(user.employeeId) 
                     .delete()
                     .addOnSuccessListener {
-                        Toast.makeText(this, "${user.name} removed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "${user.name} removed successfully", Toast.LENGTH_SHORT).show()
                         loadApprovedOfficers() 
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Failed to remove: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .setNegativeButton("Cancel", null)
@@ -276,6 +315,7 @@ class OfficerListActivity : AppCompatActivity() {
             val layoutTargetAchievement: View? = view.findViewById(R.id.layoutOfficerTargetAchievement)
             val tvTargetBadge: TextView? = view.findViewById(R.id.tvOfficerTargetBadge)
             val tvAchievementBadge: TextView? = view.findViewById(R.id.tvOfficerAchievementBadge)
+            val tvThresholdAlert: TextView? = view.findViewById(R.id.tvOfficerThresholdAlert)
             val btnDelete: MaterialCardView = view.findViewById(R.id.btnDeleteOfficer)
         }
 
@@ -297,19 +337,28 @@ class OfficerListActivity : AppCompatActivity() {
             val zoneText = if (user.zone.isNotBlank() && !user.zone.equals("N/A", ignoreCase = true)) " | Zone: ${user.zone}" else ""
             holder.tvBranchZone.text = "Branch: $branchText$zoneText"
 
-            // Target & Achievement Info
+            // Target & Achievement Info (Only for target-eligible employees)
             val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
             val target = user.monthlyTarget
             val achieved = TargetUtils.countCards(allPerformances, user.employeeId, currentMonth)
 
-            if (target > 0 || achieved > 0) {
+            if (user.isTargetEligible && (target > 0 || achieved > 0)) {
                 holder.layoutTargetAchievement?.visibility = View.VISIBLE
                 holder.tvTargetBadge?.text = "Target: $target"
                 holder.tvAchievementBadge?.text = TargetUtils.formatAchievementRate(achieved, target)
                 val achColor = TargetUtils.getAchievementColor(achieved, target)
                 holder.tvAchievementBadge?.setTextColor(achColor)
+
+                val isBelow = TargetUtils.isBelowThreshold(achieved, target)
+                if (isBelow) {
+                    holder.tvThresholdAlert?.visibility = View.VISIBLE
+                    holder.tvThresholdAlert?.text = TargetUtils.getThresholdWarningBadgeText(achieved, target)
+                } else {
+                    holder.tvThresholdAlert?.visibility = View.GONE
+                }
             } else {
                 holder.layoutTargetAchievement?.visibility = View.GONE
+                holder.tvThresholdAlert?.visibility = View.GONE
             }
 
             val isAdmin = com.performance.tracker.util.SessionManager.getUserRole(this@OfficerListActivity).equals("ADMIN", ignoreCase = true)

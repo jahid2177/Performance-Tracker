@@ -18,62 +18,97 @@
          android:text="Export Performance Report"
          android:textStyle="bold" />
 
-    <!-- Format Selection (Excel vs CSV vs PDF) -->
-    <TextView
-         android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:textColor="@color/text_secondary"
-         android:text="Export Format"
-         android:textSize="13sp"
-         android:textStyle="bold" />
-
-    <RadioGroup
+    <!-- Format Selection (Hidden when opened from dedicated PDF or Excel button) -->
+    <LinearLayout
+         android:id="@+id/layoutFormatSelection"
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:layout_marginTop="6dp"
-         android:layout_marginBottom="14dp"
-         android:orientation="horizontal"
-         android:id="@+id/rgExportFormat">
+         android:orientation="vertical"
+         android:visibility="gone">
 
-        <RadioButton
+        <TextView
+             android:id="@+id/tvFormatHeader"
              android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:layout_weight="1"
-             android:textColor="@color/text_primary"
-             android:checked="true"
-             android:id="@+id/rbFormatXlsx"
-             android:text="Excel (.xlsx)"
+             android:layout_width="wrap_content"
+             android:textColor="@color/text_secondary"
+             android:text="Export Format"
              android:textSize="13sp"
              android:textStyle="bold" />
 
-        <RadioButton
+        <RadioGroup
              android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:layout_weight="1"
-             android:textColor="@color/text_primary"
-             android:id="@+id/rbFormatCsv"
-             android:text="CSV (.csv)"
-             android:textSize="13sp"
-             android:textStyle="bold" />
+             android:layout_width="match_parent"
+             android:layout_marginTop="6dp"
+             android:layout_marginBottom="14dp"
+             android:orientation="horizontal"
+             android:id="@+id/rgExportFormat">
 
-        <RadioButton
-             android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:layout_weight="1"
-             android:textColor="@color/text_primary"
-             android:id="@+id/rbFormatPdf"
-             android:text="PDF (.pdf)"
-             android:textSize="13sp"
-             android:textStyle="bold" />
+            <RadioButton
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:layout_weight="1"
+                 android:textColor="@color/text_primary"
+                 android:checked="true"
+                 android:id="@+id/rbFormatXlsx"
+                 android:text="Excel (.xlsx)"
+                 android:textSize="13sp"
+                 android:textStyle="bold" />
 
-    </RadioGroup>
+            <RadioButton
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:layout_weight="1"
+                 android:textColor="@color/text_primary"
+                 android:id="@+id/rbFormatCsv"
+                 android:text="CSV (.csv)"
+                 android:textSize="13sp"
+                 android:textStyle="bold" />
+
+            <RadioButton
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:layout_weight="1"
+                 android:textColor="@color/text_primary"
+                 android:id="@+id/rbFormatPdf"
+                 android:text="PDF (.pdf)"
+                 android:textSize="13sp"
+                 android:textStyle="bold" />
+
+        </RadioGroup>
+    </LinearLayout>
 
     <!-- Month Range -->
     <LinearLayout
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
+         android:orientation="horizontal"
+         android:gravity="center_vertical"
+         android:layout_marginBottom="4dp">
+
+        <TextView
+             android:layout_height="wrap_content"
+             android:layout_width="0dp"
+             android:layout_weight="1"
+             android:textColor="@color/text_secondary"
+             android:text="Select Period"
+             android:textSize="13sp"
+             android:textStyle="bold" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+             android:id="@+id/cbAllMonths"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="All Months"
+             android:textSize="12sp"
+             android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <LinearLayout
+         android:id="@+id/layoutMonthSpinners"
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
          android:weightSum="2"
-         android:layout_marginBottom="14dp"
+         android:layout_marginBottom="10dp"
          android:orientation="horizontal">
 
         <LinearLayout
@@ -88,8 +123,7 @@
                  android:layout_width="wrap_content"
                  android:textColor="@color/text_secondary"
                  android:text="From Month"
-                 android:textSize="13sp"
-                 android:textStyle="bold" />
+                 android:textSize="12sp" />
 
             <Spinner
                  android:layout_height="46dp"
@@ -112,8 +146,7 @@
                  android:layout_width="wrap_content"
                  android:textColor="@color/text_secondary"
                  android:text="To Month"
-                 android:textSize="13sp"
-                 android:textStyle="bold" />
+                 android:textSize="12sp" />
 
             <Spinner
                  android:layout_height="46dp"
@@ -126,55 +159,134 @@
 
     </LinearLayout>
 
-    <!-- Report Type (Summary vs Details) -->
+    <!-- Dynamic Record Count Indicator -->
     <TextView
+         android:id="@+id/tvExportRecordCount"
+         android:layout_width="match_parent"
          android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:textColor="@color/text_secondary"
-         android:text="Report Content"
-         android:textSize="13sp"
-         android:textStyle="bold" />
+         android:text="Checking records..."
+         android:textSize="12sp"
+         android:textStyle="bold"
+         android:textColor="@color/primary"
+         android:layout_marginBottom="14dp" />
 
-    <RadioGroup
+    <!-- PDF Report Scope Options (Full vs Summary vs Details) -->
+    <LinearLayout
+         android:id="@+id/layoutPdfContentOptions"
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:layout_marginTop="6dp"
+         android:orientation="vertical">
+
+        <TextView
+             android:id="@+id/tvReportContentType"
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:textColor="@color/text_secondary"
+             android:text="PDF Content Scope"
+             android:textSize="13sp"
+             android:textStyle="bold" />
+
+        <RadioGroup
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:layout_marginTop="6dp"
+             android:layout_marginBottom="20dp"
+             android:orientation="horizontal"
+             android:id="@+id/rgExportType">
+
+            <RadioButton
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:layout_weight="1.2"
+                 android:textColor="@color/text_primary"
+                 android:checked="true"
+                 android:id="@+id/rbFullReport"
+                 android:text="Full (All)"
+                 android:textSize="13sp"
+                 android:textStyle="bold" />
+
+            <RadioButton
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:layout_weight="1"
+                 android:textColor="@color/text_primary"
+                 android:id="@+id/rbSummary"
+                 android:text="Summary"
+                 android:textSize="13sp"
+                 android:textStyle="bold" />
+
+            <RadioButton
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:layout_weight="1"
+                 android:textColor="@color/text_primary"
+                 android:id="@+id/rbDetails"
+                 android:text="Details"
+                 android:textSize="13sp"
+                 android:textStyle="bold" />
+
+        </RadioGroup>
+    </LinearLayout>
+
+    <!-- Excel Report Content Options (Multiple select checkboxes: Zone, Sales Manager, Details) -->
+    <LinearLayout
+         android:id="@+id/layoutExcelContentOptions"
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:layout_marginTop="2dp"
          android:layout_marginBottom="20dp"
-         android:orientation="horizontal"
-         android:id="@+id/rgExportType">
+         android:orientation="vertical"
+         android:visibility="gone">
 
-        <RadioButton
+        <TextView
+             android:id="@+id/tvExcelContentHeader"
              android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:layout_weight="1.2"
-             android:textColor="@color/text_primary"
+             android:layout_width="wrap_content"
+             android:textColor="@color/text_secondary"
+             android:text="Report Content (Columns &amp; Sheets)"
+             android:textSize="13sp"
+             android:textStyle="bold"
+             android:layout_marginBottom="6dp" />
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:orientation="horizontal">
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                 android:id="@+id/cbExcelZone"
+                 android:layout_width="0dp"
+                 android:layout_height="wrap_content"
+                 android:layout_weight="1"
+                 android:checked="true"
+                 android:text="Zone"
+                 android:textSize="13sp"
+                 android:textStyle="bold"
+                 android:textColor="@color/text_primary" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                 android:id="@+id/cbExcelSalesManager"
+                 android:layout_width="0dp"
+                 android:layout_height="wrap_content"
+                 android:layout_weight="1.3"
+                 android:checked="false"
+                 android:text="Sales Manager"
+                 android:textSize="13sp"
+                 android:textStyle="bold"
+                 android:textColor="@color/text_primary" />
+
+        </LinearLayout>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+             android:id="@+id/cbExcelApplicantDetails"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
              android:checked="true"
-             android:id="@+id/rbFullReport"
-             android:text="Full (All)"
-             android:textSize="13sp"
-             android:textStyle="bold" />
+             android:text="Include Applicant Details (Sheet 2)"
+             android:textSize="12sp"
+             android:textColor="@color/text_secondary" />
 
-        <RadioButton
-             android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:layout_weight="1"
-             android:textColor="@color/text_primary"
-             android:id="@+id/rbSummary"
-             android:text="Summary"
-             android:textSize="13sp"
-             android:textStyle="bold" />
-
-        <RadioButton
-             android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:layout_weight="1"
-             android:textColor="@color/text_primary"
-             android:id="@+id/rbDetails"
-             android:text="Details"
-             android:textSize="13sp"
-             android:textStyle="bold" />
-
-    </RadioGroup>
+    </LinearLayout>
 
     <!-- Download and Share Action Buttons -->
     <LinearLayout

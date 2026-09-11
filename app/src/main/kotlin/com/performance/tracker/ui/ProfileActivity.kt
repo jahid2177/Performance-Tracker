@@ -1,5 +1,8 @@
 package com.performance.tracker.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -142,33 +145,72 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         binding.tvProfileMobile.text = user.mobile.ifEmpty { "N/A" }
+        binding.tvProfileEmail.text = user.email.ifEmpty { "Not set (Required for password recovery)" }
         binding.tvProfileOfficialNumber.text = user.officialNumber.ifEmpty { "N/A" }
         binding.tvProfileBranch.text = user.branch.ifEmpty { "N/A" }
         binding.tvProfileZone.text = user.zone.ifEmpty { "N/A" }
-        binding.tvProfileManager.text = user.salesManager.ifEmpty { "N/A" }
 
-        // Target & Achievement Progress Display
-        val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
-        db.collection("performance")
-            .whereEqualTo("employeeId", user.employeeId.ifEmpty { targetEmployeeId })
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val performances = snapshot.toObjects(Performance::class.java)
-                val target = user.monthlyTarget
-                val achieved = TargetUtils.countCards(performances, user.employeeId.ifEmpty { targetEmployeeId }, currentMonth)
-                val rate = TargetUtils.calculateAchievementRate(achieved, target)
+        // Copy button handlers for easy copying
+        binding.btnCopyMobile.setOnClickListener {
+            copyToClipboard("Mobile Number", user.mobile)
+        }
+        binding.tvProfileMobile.setOnClickListener {
+            copyToClipboard("Mobile Number", user.mobile)
+        }
 
-                binding.tvProfileTargetCount.text = "$target Cards ($currentMonth)"
-                binding.tvProfileAchievedCount.text = "$achieved Cards"
-                binding.tvProfileAchievementBadge.text = TargetUtils.formatAchievementRate(achieved, target)
+        binding.btnCopyOfficialNumber.setOnClickListener {
+            copyToClipboard("Official Number", user.officialNumber)
+        }
+        binding.tvProfileOfficialNumber.setOnClickListener {
+            copyToClipboard("Official Number", user.officialNumber)
+        }
 
-                val color = TargetUtils.getAchievementColor(achieved, target)
-                binding.tvProfileAchievementBadge.setTextColor(color)
+        // Sales Manager is only shown for regular employees (Hidden for ADMIN, AGM, DGM, Sales Manager)
+        if (user.isManagementOrAdmin) {
+            binding.layoutProfileManagerGroup.visibility = View.GONE
+        } else {
+            binding.layoutProfileManagerGroup.visibility = View.VISIBLE
+            binding.tvProfileManager.text = user.salesManager.ifEmpty { "N/A" }
+        }
 
-                val progress = rate.toInt().coerceIn(0, 100)
-                binding.progressProfileTarget.progress = progress
-                binding.progressProfileTarget.setIndicatorColor(color)
-            }
+        // Target & Achievement Progress Display - only for target-eligible employees (exclude AGM, Sales Manager, Admin, DGM)
+        if (user.isTargetEligible) {
+            binding.cardProfileTarget.visibility = View.VISIBLE
+            val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
+            db.collection("performance")
+                .whereEqualTo("employeeId", user.employeeId.ifEmpty { targetEmployeeId })
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    val performances = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(Performance::class.java)?.apply { id = doc.id }
+                    }
+                    val target = user.monthlyTarget
+                    val achieved = TargetUtils.countCards(performances, user.employeeId.ifEmpty { targetEmployeeId }, currentMonth)
+                    val rate = TargetUtils.calculateAchievementRate(achieved, target)
+
+                    binding.tvProfileTargetCount.text = "$target Cards ($currentMonth)"
+                    binding.tvProfileAchievedCount.text = "$achieved Cards"
+
+                    val isBelowThreshold = TargetUtils.isBelowThreshold(achieved, target)
+                    if (isBelowThreshold) {
+                        binding.tvProfileAchievementBadge.text = TargetUtils.getThresholdWarningBadgeText(achieved, target)
+                        binding.tvProfileAchievementBadge.setBackgroundResource(R.drawable.bg_badge_red)
+                        binding.tvProfileAchievementBadge.setTextColor(getColor(R.color.badge_red_icon))
+                    } else {
+                        binding.tvProfileAchievementBadge.text = TargetUtils.formatAchievementRate(achieved, target)
+                        binding.tvProfileAchievementBadge.setBackgroundResource(R.drawable.bg_badge_mint)
+                        val color = TargetUtils.getAchievementColor(achieved, target)
+                        binding.tvProfileAchievementBadge.setTextColor(color)
+                    }
+
+                    val color = TargetUtils.getAchievementColor(achieved, target)
+                    val progress = rate.toInt().coerceIn(0, 100)
+                    binding.progressProfileTarget.progress = progress
+                    binding.progressProfileTarget.setIndicatorColor(color)
+                }
+        } else {
+            binding.cardProfileTarget.visibility = View.GONE
+        }
 
         // Role-Based Permission Check
         val loggedInId = SessionManager.getUserId(this)
@@ -177,8 +219,8 @@ class ProfileActivity : AppCompatActivity() {
         val isAdmin = loggedInRole.equals("ADMIN", ignoreCase = true) || user.role.equals("ADMIN", ignoreCase = true)
         val isOwnProfile = (loggedInId.isNotEmpty() && (loggedInId == user.employeeId || loggedInId == targetEmployeeId))
 
-        // Target setting is strictly for ADMIN
-        if (isAdmin) {
+        // Target setting is strictly for ADMIN and only for target-eligible employees
+        if (isAdmin && user.isTargetEligible) {
             binding.btnProfileSetTarget.visibility = View.VISIBLE
             binding.btnProfileSetTarget.setOnClickListener {
                 showSetTargetDialog(user)
@@ -212,6 +254,18 @@ class ProfileActivity : AppCompatActivity() {
             binding.cardEditPhotoBadge.visibility = View.GONE
             binding.cardProfileAvatar.isClickable = false
         }
+    }
+
+    private fun copyToClipboard(label: String, text: String) {
+        val cleanText = text.trim()
+        if (cleanText.isEmpty() || cleanText.equals("N/A", ignoreCase = true) || cleanText.startsWith("Not set")) {
+            Toast.makeText(this, "No $label available to copy", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText(label, cleanText)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(this, "$label copied: $cleanText", Toast.LENGTH_SHORT).show()
     }
 
     private fun showPhotoOptionsDialog(user: User) {
@@ -290,6 +344,7 @@ class ProfileActivity : AppCompatActivity() {
         // Pre-fill existing data
         dialogBinding.etEditProfileName.setText(user.name)
         dialogBinding.etEditProfileMobile.setText(user.mobile)
+        dialogBinding.etEditProfileEmail.setText(user.email)
         dialogBinding.etEditProfileOfficialNumber.setText(user.officialNumber)
         dialogBinding.etEditProfileBranch.setText(user.branch)
         dialogBinding.etEditProfileZone.setText(user.zone)
@@ -326,6 +381,14 @@ class ProfileActivity : AppCompatActivity() {
         val roleList = listOf("USER", "Sales Manager", "ADMIN", "AGM", "DGM")
         val statusList = listOf("Approved", "Pending")
 
+        fun updateManagerFieldVisibility(role: String) {
+            val isManagementOrAdmin = role.equals("Sales Manager", ignoreCase = true) ||
+                    role.equals("AGM", ignoreCase = true) ||
+                    role.equals("DGM", ignoreCase = true) ||
+                    role.equals("ADMIN", ignoreCase = true)
+            dialogBinding.layoutEditProfileManager.visibility = if (isManagementOrAdmin) View.GONE else View.VISIBLE
+        }
+
         if (isEditingOtherUserAsAdmin) {
             dialogBinding.layoutAdminRole.visibility = View.VISIBLE
             dialogBinding.layoutAdminStatus.visibility = View.VISIBLE
@@ -339,13 +402,20 @@ class ProfileActivity : AppCompatActivity() {
             dialogBinding.spEditProfileStatus.adapter = statusAdapter
             val currentStatusIdx = statusList.indexOfFirst { it.equals(user.status, ignoreCase = true) }
             if (currentStatusIdx >= 0) dialogBinding.spEditProfileStatus.setSelection(currentStatusIdx)
+
+            updateManagerFieldVisibility(user.role)
+
+            dialogBinding.spEditProfileRole.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val selectedRole = roleList[position]
+                    updateManagerFieldVisibility(selectedRole)
+                }
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            }
         } else {
             dialogBinding.layoutAdminRole.visibility = View.GONE
             dialogBinding.layoutAdminStatus.visibility = View.GONE
-
-            if (user.role.equals("Sales Manager", ignoreCase = true) || user.role.equals("ADMIN", ignoreCase = true)) {
-                dialogBinding.layoutEditProfileManager.visibility = View.GONE
-            }
+            updateManagerFieldVisibility(user.role)
         }
 
         dialog.setOnDismissListener {
@@ -359,6 +429,7 @@ class ProfileActivity : AppCompatActivity() {
         dialogBinding.btnSaveEditProfile.setOnClickListener {
             val newName = dialogBinding.etEditProfileName.text.toString().trim()
             val newMobile = dialogBinding.etEditProfileMobile.text.toString().trim()
+            val newEmail = dialogBinding.etEditProfileEmail.text.toString().trim()
             val newOfficialNumber = dialogBinding.etEditProfileOfficialNumber.text.toString().trim()
             val newBranch = dialogBinding.etEditProfileBranch.text.toString().trim()
             val newZone = dialogBinding.etEditProfileZone.text.toString().trim()
@@ -368,6 +439,10 @@ class ProfileActivity : AppCompatActivity() {
 
             if (newName.isEmpty()) {
                 dialogBinding.etEditProfileName.error = "Name is required"
+                return@setOnClickListener
+            }
+            if (newEmail.isNotEmpty() && !android.util.Patterns.EMAIL_ADDRESS.matcher(newEmail).matches()) {
+                dialogBinding.etEditProfileEmail.error = "Please enter a valid email address"
                 return@setOnClickListener
             }
 
@@ -384,21 +459,32 @@ class ProfileActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            var finalRole = user.role.ifEmpty { if (isAdmin) "ADMIN" else "USER" }
+            if (isEditingOtherUserAsAdmin) {
+                finalRole = dialogBinding.spEditProfileRole.selectedItem.toString()
+            }
+
+            val isMgmtOrAdmin = finalRole.equals("Sales Manager", ignoreCase = true) ||
+                    finalRole.equals("AGM", ignoreCase = true) ||
+                    finalRole.equals("DGM", ignoreCase = true) ||
+                    finalRole.equals("ADMIN", ignoreCase = true)
+
+            val effectiveManager = if (isMgmtOrAdmin) "" else newManager
+
             val updates = hashMapOf<String, Any>(
                 "employeeId" to docId,
                 "name" to newName,
+                "email" to newEmail,
                 "mobile" to newMobile,
                 "officialNumber" to newOfficialNumber,
                 "branch" to newBranch,
                 "zone" to newZone,
-                "salesManager" to newManager,
+                "salesManager" to effectiveManager,
                 "password" to finalPassword,
                 "profileImage" to finalImage
             )
 
-            var finalRole = user.role.ifEmpty { if (isAdmin) "ADMIN" else "USER" }
             if (isEditingOtherUserAsAdmin) {
-                finalRole = dialogBinding.spEditProfileRole.selectedItem.toString()
                 val finalStatus = dialogBinding.spEditProfileStatus.selectedItem.toString()
                 updates["role"] = finalRole
                 updates["status"] = finalStatus
@@ -414,7 +500,7 @@ class ProfileActivity : AppCompatActivity() {
 
                     // If user edited own profile, update session as well
                     if (loggedInId == docId || isOwnProfile) {
-                        SessionManager.saveUser(this, docId, finalRole, newName)
+                        SessionManager.saveUser(this, docId, finalRole, newName, newEmail)
                     }
 
                     // Reload UI

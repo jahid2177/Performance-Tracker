@@ -3,6 +3,7 @@ package com.performance.tracker.model
 data class User(
     val employeeId: String = "",
     val name: String = "",
+    val email: String = "",
     val branch: String = "",
     val salesManager: String = "",
     val mobile: String = "",
@@ -10,11 +11,12 @@ data class User(
     val zone: String = "",
     val password: String = "",
     val role: String = "",
-    val status: String = "Approved", // 🔥 এখানে Pending এর বদলে Approved করে দিন
+    val status: String = "Pending", // Default new users to Pending until Admin approves
     val createdAt: Long = 0L,
     val profileImage: String = "",
     val department: String = "",
-    val monthlyTarget: Int = 0
+    val monthlyTarget: Int = 0,
+    val yearlyTarget: Int = 0
 ) {
     val displayDepartment: String
         get() = when {
@@ -23,4 +25,13 @@ data class User(
             zone.isNotBlank() && !zone.equals("N/A", ignoreCase = true) -> zone
             else -> "General"
         }
+
+    val isManagementOrAdmin: Boolean
+        get() = role.equals("Sales Manager", ignoreCase = true) ||
+                role.equals("AGM", ignoreCase = true) ||
+                role.equals("DGM", ignoreCase = true) ||
+                role.equals("ADMIN", ignoreCase = true)
+
+    val isTargetEligible: Boolean
+        get() = !isManagementOrAdmin
 }

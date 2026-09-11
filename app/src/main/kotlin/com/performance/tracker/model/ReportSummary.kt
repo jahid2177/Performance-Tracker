@@ -7,5 +7,6 @@ data class ReportSummary(
     val branch: String,
     val month: String,
     val timestamp: Long,
-    val totalRecords: Int
+    val totalRecords: Int,
+    var targetCards: Int = 8
 ) : Serializable

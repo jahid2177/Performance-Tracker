@@ -31,6 +31,16 @@ object TargetUtils {
         }
     }
 
+    fun isBelowThreshold(achieved: Int, target: Int, thresholdPercent: Float = 50.0f): Boolean {
+        if (target <= 0) return false
+        return calculateAchievementRate(achieved, target) < thresholdPercent
+    }
+
+    fun getThresholdWarningBadgeText(achieved: Int, target: Int): String {
+        val rate = calculateAchievementRate(achieved, target)
+        return "⚠️ <50% Alert (${String.format(Locale.US, "%.0f%%", rate)})"
+    }
+
     fun countCards(reports: List<Performance>, employeeId: String, month: String? = null): Int {
         val userReports = reports.filter { it.employeeId.equals(employeeId, ignoreCase = true) }
         val filtered = if (!month.isNullOrBlank() && !month.equals("All", ignoreCase = true)) {
@@ -47,6 +57,7 @@ object TargetUtils {
         employeeName: String,
         month: String,
         targetCards: Int,
+        yearlyTargetCards: Int = 0,
         adminName: String,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
@@ -55,11 +66,14 @@ object TargetUtils {
         val cleanMonth = if (month.isBlank()) "General" else month
         val docId = "${employeeId}_${cleanMonth.uppercase()}"
 
+        val calculatedYearly = if (yearlyTargetCards > 0) yearlyTargetCards else (targetCards * 12)
+
         val targetObj = EmployeeTarget(
             employeeId = employeeId,
             employeeName = employeeName,
             month = cleanMonth,
             targetCards = targetCards,
+            yearlyTargetCards = calculatedYearly,
             year = 2026,
             updatedBy = adminName,
             updatedAt = System.currentTimeMillis()
@@ -69,8 +83,11 @@ object TargetUtils {
         db.collection("targets").document(docId)
             .set(targetObj, SetOptions.merge())
             .addOnSuccessListener {
-                // Also update user's monthlyTarget field in employees collection
-                val userUpdate = mapOf("monthlyTarget" to targetCards)
+                // Also update user's monthlyTarget and yearlyTarget field in employees collection
+                val userUpdate = mapOf(
+                    "monthlyTarget" to targetCards,
+                    "yearlyTarget" to calculatedYearly
+                )
                 db.collection("employees").document(employeeId)
                     .set(userUpdate, SetOptions.merge())
                     .addOnSuccessListener {

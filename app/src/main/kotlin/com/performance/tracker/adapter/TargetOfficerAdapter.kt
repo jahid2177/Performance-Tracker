@@ -13,7 +13,9 @@ data class TargetOfficerItem(
     val user: User,
     val target: Int,
     val achieved: Int,
-    val achievementRate: Float
+    val achievementRate: Float,
+    val yearlyTarget: Int = 0,
+    val yearlyAchieved: Int = 0
 )
 
 class TargetOfficerAdapter(
@@ -47,8 +49,20 @@ class TargetOfficerAdapter(
             // Profile image
             ImageUtils.loadProfileImage(user.profileImage, binding.ivTargetOfficerAvatar)
 
-            binding.tvTargetNumbers.text = "Target: ${item.target} | Achieved: ${item.achieved} cards"
+            if (item.yearlyTarget > 0) {
+                binding.tvTargetNumbers.text = "Monthly: ${item.target} (Ach: ${item.achieved}) | Year: ${item.yearlyTarget} (Ach: ${item.yearlyAchieved})"
+            } else {
+                binding.tvTargetNumbers.text = "Target: ${item.target} | Achieved: ${item.achieved} cards"
+            }
             binding.tvTargetPercentBadge.text = TargetUtils.formatAchievementRate(item.achieved, item.target)
+
+            val isBelow = TargetUtils.isBelowThreshold(item.achieved, item.target)
+            if (isBelow) {
+                binding.tvTargetThresholdAlert.visibility = android.view.View.VISIBLE
+                binding.tvTargetThresholdAlert.text = TargetUtils.getThresholdWarningBadgeText(item.achieved, item.target)
+            } else {
+                binding.tvTargetThresholdAlert.visibility = android.view.View.GONE
+            }
 
             val color = TargetUtils.getAchievementColor(item.achieved, item.target)
             binding.tvTargetPercentBadge.setTextColor(color)

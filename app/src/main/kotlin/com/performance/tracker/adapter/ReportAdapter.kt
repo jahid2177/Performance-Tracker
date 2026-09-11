@@ -36,15 +36,11 @@ class ReportAdapter(
             val dateStr = sdf.format(Date(item.timestamp))
             val count = item.totalRecords
 
-            // 🔥 0 card হলে লাল কালার, নাহলে সাধারণ কালার (কার্ড/কার্ডস লজিক)
-            if (count == 0) {
-                tvDate.text = "Submitted: $dateStr (0 card)"
-                tvDate.setTextColor(Color.RED)
-            } else {
-                val cardText = if (count == 1) "1 card" else "$count cards"
-                tvDate.text = "Submitted: $dateStr ($cardText)"
-                tvDate.setTextColor(Color.parseColor("#666666")) // ডিফল্ট গ্রে কালার
-            }
+            tvCardsCount.text = count.toString()
+            tvTargetCount.text = item.targetCards.toString()
+
+            tvDate.text = "Submitted: $dateStr"
+            tvDate.setTextColor(Color.parseColor("#64748B"))
 
             // পুরো কার্ডে ক্লিক করলে বিস্তারিত পেজে যাবে
             root.setOnClickListener { onCardClick?.invoke(item) }

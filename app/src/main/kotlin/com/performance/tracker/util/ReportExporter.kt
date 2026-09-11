@@ -1,5 +1,7 @@
 package com.performance.tracker.util
 
+import android.app.Activity
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -11,17 +13,17 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
-import com.lowagie.text.Document
-import com.lowagie.text.Element
-import com.lowagie.text.Font
-import com.lowagie.text.Paragraph
-import com.lowagie.text.Phrase
-import com.lowagie.text.pdf.PdfPCell
-import com.lowagie.text.pdf.PdfPTable
-import com.lowagie.text.pdf.PdfWriter
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.graphics.pdf.PdfDocument
+import com.performance.tracker.R
 import com.performance.tracker.model.Performance
 import com.performance.tracker.model.ReportSummary
 import java.io.File
@@ -35,8 +37,10 @@ object ReportExporter {
 
     private const val CHANNEL_ID = "performance_reports"
 
+    private data class PdfCol(val title: String, val width: Float, val isCenter: Boolean)
+
     // ========================================================
-    // 1. OPENPDF: Monthly Performance Report (Download / Share)
+    // 1. NATIVE ANDROID PDF: Monthly Performance Report (Download / Share)
     // ========================================================
     fun generateMonthlyPdf(
         context: Context,
@@ -56,69 +60,173 @@ object ReportExporter {
             val fileName = "Monthly_Performance_Report_$timestamp.pdf"
             val mimeType = "application/pdf"
 
-            val targetFile: File?
-            val outputStream: OutputStream?
-            val shareUri: Uri?
+            // Always write first to cache directory to ensure guaranteed success without permission failure
+            val reportsDir = File(context.cacheDir, "reports").apply { if (!exists()) mkdirs() }
+            val targetFile = File(reportsDir, fileName)
+            val outputStream = FileOutputStream(targetFile)
 
-            if (isShare) {
-                val reportsDir = File(context.cacheDir, "reports")
-                if (!reportsDir.exists()) reportsDir.mkdirs()
-                targetFile = File(reportsDir, fileName)
-                outputStream = FileOutputStream(targetFile)
-                shareUri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    targetFile
-                )
-            } else {
-                targetFile = null
-                val pair = getDownloadStream(context, fileName, mimeType)
-                shareUri = pair.first
-                outputStream = pair.second
+            // PDF Dimensions (Standard A4 @ 72 DPI)
+            val pageWidth = 595
+            val pageHeight = 842
+            val marginLeft = 36f
+            val marginRight = 559f
+            val contentWidth = marginRight - marginLeft // 523f
+
+            val pdfDocument = PdfDocument()
+            var pageNum = 1
+            var pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+            var currentPage = pdfDocument.startPage(pageInfo)
+            var canvas = currentPage.canvas
+
+            // Paints
+            val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#0F172A")
+                textSize = 15f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textAlign = Paint.Align.CENTER
+            }
+            val subTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#1E40AF")
+                textSize = 10.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textAlign = Paint.Align.CENTER
+            }
+            val metaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#64748B")
+                textSize = 8.5f
+                textAlign = Paint.Align.CENTER
+            }
+            val statsCardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#F1F5F9")
+                style = Paint.Style.FILL
+            }
+            val statsCardBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#CBD5E1")
+                style = Paint.Style.STROKE
+                strokeWidth = 1f
+            }
+            val statsTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#1E293B")
+                textSize = 9.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            val headerBgPaint = Paint().apply {
+                color = Color.parseColor("#1E3A8A")
+                style = Paint.Style.FILL
+            }
+            val headerTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 8.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            val rowBgPaint = Paint().apply {
+                style = Paint.Style.FILL
+            }
+            val dataTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#1E293B")
+                textSize = 8f
+            }
+            val dataBoldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#0F172A")
+                textSize = 8.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            val dividerPaint = Paint().apply {
+                color = Color.parseColor("#E2E8F0")
+                strokeWidth = 0.5f
+            }
+            val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#94A3B8")
+                textSize = 7.5f
             }
 
-            if (outputStream == null) {
-                Toast.makeText(context, "Unable to create output file", Toast.LENGTH_SHORT).show()
-                return
+            fun fitText(text: String, maxWidth: Float, paint: Paint): String {
+                if (paint.measureText(text) <= maxWidth) return text
+                var low = 0
+                var high = text.length
+                var best = ""
+                while (low <= high) {
+                    val mid = (low + high) / 2
+                    val candidate = text.substring(0, mid) + "…"
+                    if (paint.measureText(candidate) <= maxWidth) {
+                        best = candidate
+                        low = mid + 1
+                    } else {
+                        high = mid - 1
+                    }
+                }
+                return if (best.isNotEmpty()) best else text.take(1)
             }
 
-            // Generate PDF with OpenPDF
-            val document = Document()
-            PdfWriter.getInstance(document, outputStream)
-            document.open()
-
-            // Document Header
-            val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
-            val subFont = Font(Font.HELVETICA, 12f, Font.BOLD)
-            val normalFont = Font(Font.HELVETICA, 10f, Font.NORMAL)
-            val tableHeaderFont = Font(Font.HELVETICA, 10f, Font.BOLD)
-            val tableDataFont = Font(Font.HELVETICA, 9f, Font.NORMAL)
-
-            val titlePara = Paragraph("MONTHLY PERFORMANCE REPORT", titleFont).apply {
-                alignment = Element.ALIGN_CENTER
-                spacingAfter = 4f
+            fun drawFooter(c: Canvas, pNum: Int) {
+                c.drawLine(marginLeft, pageHeight - 32f, marginRight, pageHeight - 32f, dividerPaint)
+                c.drawText("Generated by Employee Performance Tracker", marginLeft, pageHeight - 18f, footerPaint)
+                val pText = "Page $pNum"
+                val pWidth = footerPaint.measureText(pText)
+                c.drawText(pText, marginRight - pWidth, pageHeight - 18f, footerPaint)
             }
-            document.add(titlePara)
 
-            val subTitlePara = Paragraph("Period: $monthRange", subFont).apply {
-                alignment = Element.ALIGN_CENTER
-                spacingAfter = 4f
+            val summaryCols = listOf(
+                PdfCol("SL", 35f, true),
+                PdfCol("Month", 75f, false),
+                PdfCol("Officer Name", 175f, false),
+                PdfCol("Branch", 148f, false),
+                PdfCol("Total Cards", 90f, true)
+            )
+
+            val detailCols = listOf(
+                PdfCol("SL", 28f, true),
+                PdfCol("Month", 58f, false),
+                PdfCol("Officer", 95f, false),
+                PdfCol("Branch", 85f, false),
+                PdfCol("Applicant Name", 110f, false),
+                PdfCol("A/C No", 92f, false),
+                PdfCol("Limit", 55f, true)
+            )
+
+            val activeCols = if (isSummary) summaryCols else detailCols
+            val headerRowHeight = 24f
+            val dataRowHeight = 20f
+
+            fun drawHeaderRow(c: Canvas, y: Float) {
+                c.drawRect(marginLeft, y, marginRight, y + headerRowHeight, headerBgPaint)
+                var curX = marginLeft
+                for (col in activeCols) {
+                    val label = fitText(col.title, col.width - 4f, headerTextPaint)
+                    val labelY = y + (headerRowHeight / 2f) - ((headerTextPaint.descent() + headerTextPaint.ascent()) / 2f)
+                    val labelX = if (col.isCenter) {
+                        curX + (col.width - headerTextPaint.measureText(label)) / 2f
+                    } else {
+                        curX + 5f
+                    }
+                    c.drawText(label, labelX, labelY, headerTextPaint)
+
+                    dividerPaint.color = Color.parseColor("#3B82F6")
+                    dividerPaint.strokeWidth = 0.5f
+                    c.drawLine(curX + col.width, y, curX + col.width, y + headerRowHeight, dividerPaint)
+
+                    curX += col.width
+                }
             }
-            document.add(subTitlePara)
 
-            val metaText = StringBuilder()
-            if (managerName.isNotEmpty()) {
-                metaText.append("Manager / Team: $managerName | ")
-            }
-            metaText.append("Generated On: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())}")
+            var currentY = 40f
 
-            val metaPara = Paragraph(metaText.toString(), normalFont).apply {
-                alignment = Element.ALIGN_CENTER
-                spacingAfter = 14f
-            }
-            document.add(metaPara)
+            // Document Title
+            canvas.drawText("MONTHLY PERFORMANCE REPORT", pageWidth / 2f, currentY, titlePaint)
+            currentY += 16f
 
-            // Statistics Summary
+            // Subtitle / Period
+            canvas.drawText("Period: $monthRange", pageWidth / 2f, currentY, subTitlePaint)
+            currentY += 14f
+
+            // Meta Info
+            val metaBuilder = StringBuilder()
+            if (managerName.isNotBlank()) metaBuilder.append("Manager / Team: $managerName  |  ")
+            metaBuilder.append("Generated On: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())}")
+            canvas.drawText(metaBuilder.toString(), pageWidth / 2f, currentY, metaPaint)
+            currentY += 16f
+
+            // Grouped Data for Stats
             val groupedData = data.groupBy { it.employeeId + "_" + it.month }.map { (_, performances) ->
                 val first = performances.first()
                 val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
@@ -127,97 +235,246 @@ object ReportExporter {
             val totalOfficers = groupedData.map { it.employeeId }.distinct().size
             val totalCards = groupedData.sumOf { it.totalRecords }
 
-            val statsTable = PdfPTable(2).apply {
-                widthPercentage = 100f
-                setSpacingAfter(12f)
-                setWidths(floatArrayOf(1f, 1f))
-            }
-            val statsCell1 = PdfPCell(Phrase("Total Active Officers: $totalOfficers", subFont)).apply {
-                setPadding(6f)
-                horizontalAlignment = Element.ALIGN_LEFT
-            }
-            val statsCell2 = PdfPCell(Phrase("Total Cards Issued: $totalCards", subFont)).apply {
-                setPadding(6f)
-                horizontalAlignment = Element.ALIGN_RIGHT
-            }
-            statsTable.addCell(statsCell1)
-            statsTable.addCell(statsCell2)
-            document.add(statsTable)
+            // Summary Stats Box
+            val statsBoxRect = RectF(marginLeft, currentY, marginRight, currentY + 28f)
+            canvas.drawRoundRect(statsBoxRect, 4f, 4f, statsCardBgPaint)
+            canvas.drawRoundRect(statsBoxRect, 4f, 4f, statsCardBorderPaint)
 
-            // Main Table
-            if (isSummary) {
-                val table = PdfPTable(5).apply {
-                    widthPercentage = 100f
-                    setWidths(floatArrayOf(0.8f, 1.8f, 3.2f, 2.7f, 1.5f))
-                }
+            val statsBaseline = currentY + 18f
+            canvas.drawText("Total Active Officers: $totalOfficers", marginLeft + 12f, statsBaseline, statsTextPaint)
+            val cardsText = "Total Cards Issued: $totalCards"
+            canvas.drawText(cardsText, marginRight - 12f - statsTextPaint.measureText(cardsText), statsBaseline, statsTextPaint)
+            currentY += 38f
 
-                val headers = listOf("SL", "Month", "Officer Name", "Branch", "Total Cards")
-                headers.forEach { h ->
-                    val cell = PdfPCell(Phrase(h, tableHeaderFont)).apply {
-                        setPadding(6f)
-                        horizontalAlignment = if (h == "Total Cards" || h == "SL") Element.ALIGN_CENTER else Element.ALIGN_LEFT
-                    }
-                    table.addCell(cell)
-                }
+            // Table Header on Page 1
+            drawHeaderRow(canvas, currentY)
+            currentY += headerRowHeight
 
-                groupedData.forEachIndexed { idx, item ->
-                    table.addCell(PdfPCell(Phrase((idx + 1).toString(), tableDataFont)).apply {
-                        setPadding(5f)
-                        horizontalAlignment = Element.ALIGN_CENTER
-                    })
-                    table.addCell(PdfPCell(Phrase(item.month, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.employeeName, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.branch, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.totalRecords.toString(), tableDataFont)).apply {
-                        setPadding(5f)
-                        horizontalAlignment = Element.ALIGN_CENTER
-                    })
+            // Prepare Row Data
+            val rows: List<List<String>> = if (isSummary) {
+                groupedData.mapIndexed { idx, item ->
+                    listOf(
+                        (idx + 1).toString(),
+                        item.month,
+                        item.employeeName,
+                        item.branch,
+                        item.totalRecords.toString()
+                    )
                 }
-                document.add(table)
             } else {
-                val table = PdfPTable(6).apply {
-                    widthPercentage = 100f
-                    setWidths(floatArrayOf(0.7f, 1.6f, 2.5f, 2f, 2.7f, 2f))
-                }
-
-                val headers = listOf("SL", "Month", "Officer", "Branch", "Applicant Name", "A/C No")
-                headers.forEach { h ->
-                    val cell = PdfPCell(Phrase(h, tableHeaderFont)).apply {
-                        setPadding(6f)
-                        horizontalAlignment = if (h == "SL") Element.ALIGN_CENTER else Element.ALIGN_LEFT
-                    }
-                    table.addCell(cell)
-                }
-
                 val details = data.filter { !it.limit.equals("NIL", ignoreCase = true) }
-                details.forEachIndexed { idx, item ->
-                    table.addCell(PdfPCell(Phrase((idx + 1).toString(), tableDataFont)).apply {
-                        setPadding(5f)
-                        horizontalAlignment = Element.ALIGN_CENTER
-                    })
-                    table.addCell(PdfPCell(Phrase(item.month, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.employeeName, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.branch, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.applicantName, tableDataFont)).apply { setPadding(5f) })
-                    table.addCell(PdfPCell(Phrase(item.accountNo, tableDataFont)).apply { setPadding(5f) })
+                if (details.isEmpty()) {
+                    emptyList()
+                } else {
+                    details.mapIndexed { idx, item ->
+                        listOf(
+                            (idx + 1).toString(),
+                            item.month,
+                            item.employeeName,
+                            item.branch,
+                            item.applicantName,
+                            item.accountNo,
+                            item.limit.ifBlank { "-" }
+                        )
+                    }
                 }
-                document.add(table)
             }
 
-            document.close()
+            if (rows.isEmpty() && !isSummary) {
+                // Empty Details Row
+                rowBgPaint.color = Color.WHITE
+                canvas.drawRect(marginLeft, currentY, marginRight, currentY + 28f, rowBgPaint)
+                val emptyNotice = "No individual card records submitted (All NIL or no details)"
+                val noticeX = (pageWidth - dataTextPaint.measureText(emptyNotice)) / 2f
+                val noticeY = currentY + 18f
+                canvas.drawText(emptyNotice, noticeX, noticeY, dataTextPaint)
+                canvas.drawLine(marginLeft, currentY + 28f, marginRight, currentY + 28f, dividerPaint)
+                currentY += 28f
+            } else {
+                rows.forEachIndexed { rowIdx, rowValues ->
+                    // Check if new page is needed
+                    if (currentY + dataRowHeight > pageHeight - 45f) {
+                        drawFooter(canvas, pageNum)
+                        pdfDocument.finishPage(currentPage)
+                        pageNum++
+                        pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                        currentPage = pdfDocument.startPage(pageInfo)
+                        canvas = currentPage.canvas
+
+                        // Mini running header
+                        metaPaint.textAlign = Paint.Align.LEFT
+                        canvas.drawText("MONTHLY PERFORMANCE REPORT - $monthRange", marginLeft, 26f, metaPaint)
+                        metaPaint.textAlign = Paint.Align.CENTER
+                        dividerPaint.color = Color.parseColor("#CBD5E1")
+                        canvas.drawLine(marginLeft, 32f, marginRight, 32f, dividerPaint)
+
+                        currentY = 40f
+                        drawHeaderRow(canvas, currentY)
+                        currentY += headerRowHeight
+                    }
+
+                    // Draw Data Row
+                    val isEven = (rowIdx % 2 == 0)
+                    rowBgPaint.color = if (isEven) Color.parseColor("#F8FAFC") else Color.WHITE
+                    canvas.drawRect(marginLeft, currentY, marginRight, currentY + dataRowHeight, rowBgPaint)
+
+                    var curX = marginLeft
+                    for (cIdx in activeCols.indices) {
+                        val col = activeCols[cIdx]
+                        val rawVal = rowValues.getOrElse(cIdx) { "" }
+                        val textToDraw = fitText(rawVal, col.width - 6f, dataTextPaint)
+                        val textY = currentY + (dataRowHeight / 2f) - ((dataTextPaint.descent() + dataTextPaint.ascent()) / 2f)
+                        val textX = if (col.isCenter) {
+                            curX + (col.width - dataTextPaint.measureText(textToDraw)) / 2f
+                        } else {
+                            curX + 5f
+                        }
+                        canvas.drawText(textToDraw, textX, textY, dataTextPaint)
+
+                        // Vertical divider
+                        dividerPaint.color = Color.parseColor("#E2E8F0")
+                        dividerPaint.strokeWidth = 0.5f
+                        canvas.drawLine(curX + col.width, currentY, curX + col.width, currentY + dataRowHeight, dividerPaint)
+
+                        curX += col.width
+                    }
+
+                    // Bottom horizontal border
+                    dividerPaint.color = Color.parseColor("#E2E8F0")
+                    canvas.drawLine(marginLeft, currentY + dataRowHeight, marginRight, currentY + dataRowHeight, dividerPaint)
+                    // Outer border
+                    canvas.drawLine(marginLeft, currentY, marginLeft, currentY + dataRowHeight, dividerPaint)
+                    canvas.drawLine(marginRight, currentY, marginRight, currentY + dataRowHeight, dividerPaint)
+
+                    currentY += dataRowHeight
+                }
+
+                // Total row for summary
+                if (isSummary) {
+                    if (currentY + 22f > pageHeight - 45f) {
+                        drawFooter(canvas, pageNum)
+                        pdfDocument.finishPage(currentPage)
+                        pageNum++
+                        pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                        currentPage = pdfDocument.startPage(pageInfo)
+                        canvas = currentPage.canvas
+                        currentY = 40f
+                    }
+                    val totalRowHeight = 22f
+                    rowBgPaint.color = Color.parseColor("#F1F5F9")
+                    canvas.drawRect(marginLeft, currentY, marginRight, currentY + totalRowHeight, rowBgPaint)
+
+                    val totalLabel = "TOTAL"
+                    val labelY = currentY + (totalRowHeight / 2f) - ((dataBoldPaint.descent() + dataBoldPaint.ascent()) / 2f)
+                    canvas.drawText(totalLabel, marginLeft + 35f + 75f + 5f, labelY, dataBoldPaint)
+
+                    val cardsSumText = totalCards.toString()
+                    val totalCardsX = marginLeft + 35f + 75f + 175f + 148f + (90f - dataBoldPaint.measureText(cardsSumText)) / 2f
+                    canvas.drawText(cardsSumText, totalCardsX, labelY, dataBoldPaint)
+
+                    dividerPaint.color = Color.parseColor("#94A3B8")
+                    dividerPaint.strokeWidth = 1f
+                    canvas.drawLine(marginLeft, currentY + totalRowHeight, marginRight, currentY + totalRowHeight, dividerPaint)
+                    canvas.drawLine(marginLeft, currentY, marginLeft, currentY + totalRowHeight, dividerPaint)
+                    canvas.drawLine(marginRight, currentY, marginRight, currentY + totalRowHeight, dividerPaint)
+                    currentY += totalRowHeight
+                }
+            }
+
+            // Draw footer on final page
+            drawFooter(canvas, pageNum)
+            pdfDocument.finishPage(currentPage)
+
+            // Write to file
+            pdfDocument.writeTo(outputStream)
+            pdfDocument.close()
             outputStream.close()
 
-            if (isShare && shareUri != null) {
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = mimeType
-                    putExtra(Intent.EXTRA_STREAM, shareUri)
-                    putExtra(Intent.EXTRA_SUBJECT, "Monthly Performance Report - $monthRange")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val shareUri: Uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                targetFile
+            )
+
+            // Save copy to Downloads for user file explorer access across all Android versions
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val cv = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val downloadUri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
+                    if (downloadUri != null) {
+                        context.contentResolver.openOutputStream(downloadUri)?.use { out ->
+                            targetFile.inputStream().use { input -> input.copyTo(out) }
+                        }
+                    }
+                } else {
+                    val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    if (!downloadDir.exists()) downloadDir.mkdirs()
+                    val destFile = File(downloadDir, fileName)
+                    targetFile.copyTo(destFile, overwrite = true)
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Share Monthly PDF Report"))
+            } catch (t: Throwable) {
+                t.printStackTrace()
+            }
+
+            if (isShare) {
+                try {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = mimeType
+                        putExtra(Intent.EXTRA_STREAM, shareUri)
+                        putExtra(Intent.EXTRA_SUBJECT, "Monthly Performance Report - $monthRange")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Share Monthly PDF Report").apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    })
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Cannot share report: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             } else {
-                Toast.makeText(context, "Monthly PDF report saved to Downloads", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Monthly PDF report generated successfully!", Toast.LENGTH_SHORT).show()
                 showNotification(context, fileName, shareUri, mimeType)
+
+                // Safely show dialog with direct Open PDF and Share buttons
+                if (context is Activity && !context.isFinishing && (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1 || !context.isDestroyed)) {
+                    try {
+                        val builder = AlertDialog.Builder(context)
+                        builder.setTitle("Monthly PDF Ready")
+                        builder.setMessage("Report has been generated successfully!\n\nPeriod: $monthRange\nRecords: ${data.size} items\nFile: $fileName")
+                        builder.setIcon(R.drawable.ic_file_pdf)
+                        builder.setPositiveButton("Open PDF") { _, _ ->
+                            try {
+                                val openIntent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(shareUri, mimeType)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(Intent.createChooser(openIntent, "Open PDF with"))
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "No PDF viewer found on device", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        builder.setNeutralButton("Share") { _, _ ->
+                            try {
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = mimeType
+                                    putExtra(Intent.EXTRA_STREAM, shareUri)
+                                    putExtra(Intent.EXTRA_SUBJECT, "Monthly Performance Report - $monthRange")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Share Monthly PDF Report"))
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Cannot share report: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        builder.setNegativeButton("Close", null)
+                        builder.show()
+                    } catch (t: Throwable) {
+                        t.printStackTrace()
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -343,11 +600,27 @@ object ReportExporter {
     // ========================================================
     enum class XlsxReportMode { FULL, SUMMARY, DETAILS }
 
+    private data class OfficerSummary(
+        val employeeId: String,
+        val employeeName: String,
+        val branch: String,
+        val zone: String,
+        val salesManager: String,
+        val total: Int,
+        val target: Int,
+        val short: Int,
+        val achievementRate: Double,
+        val achievementStr: String
+    )
+
     fun exportPerformanceXlsx(
         context: Context,
         data: List<Performance>,
         monthRange: String,
-        mode: XlsxReportMode = XlsxReportMode.FULL,
+        officerTargets: Map<String, Int> = emptyMap(),
+        includeZone: Boolean = true,
+        includeSalesManager: Boolean = false,
+        includeApplicantDetails: Boolean = true,
         isShare: Boolean = false
     ) {
         if (data.isEmpty()) {
@@ -357,7 +630,7 @@ object ReportExporter {
 
         try {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val fileName = "Employee_Performance_$timestamp.xlsx"
+            val fileName = "Performance_Report_$timestamp.xlsx"
             val mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
             val targetFile: File?
@@ -389,81 +662,113 @@ object ReportExporter {
             val sheets = mutableListOf<XlsxGenerator.SheetDef>()
             val nowFormatted = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
 
-            // 1. Grouped Summary Data
-            val grouped = data.groupBy { it.employeeId + "_" + it.month }.map { (_, list) ->
+            // 1. Grouped Performance Data per Officer
+            val groupedByOfficer = data.groupBy { it.employeeId }
+            val officerSummaries = groupedByOfficer.map { (empId, list) ->
                 val first = list.first()
-                val count = if (list.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else list.size
-                first to count
-            }
-            val totalOfficers = grouped.map { it.first.employeeId }.distinct().size
-            val totalCards = grouped.sumOf { it.second }
+                val cardCount = list.count { !it.limit.equals("NIL", ignoreCase = true) }
+                // Yearly target: priority to employee's yearlyTarget, else monthlyTarget * 12, default 25 * 12 = 300
+                val yearlyTarget = officerTargets[empId]?.takeIf { it > 0 } ?: (25 * 12)
+                val short = maxOf(0, yearlyTarget - cardCount)
+                val rate = if (yearlyTarget > 0) (cardCount.toDouble() / yearlyTarget.toDouble()) * 100.0 else 0.0
+                val rateStr = String.format(Locale.US, "%.1f%%", rate)
 
-            // Add Summary Sheet if FULL or SUMMARY
-            if (mode == XlsxReportMode.FULL || mode == XlsxReportMode.SUMMARY) {
-                val summaryCols = listOf(
-                    XlsxGenerator.ColumnDef("SL", width = 8.0, isNumeric = true, isCenter = true),
-                    XlsxGenerator.ColumnDef("Month", width = 16.0, isCenter = true),
-                    XlsxGenerator.ColumnDef("Employee ID", width = 16.0, isCenter = true),
-                    XlsxGenerator.ColumnDef("Officer Name", width = 26.0),
-                    XlsxGenerator.ColumnDef("Branch", width = 22.0),
-                    XlsxGenerator.ColumnDef("Zone", width = 18.0, isCenter = true),
-                    XlsxGenerator.ColumnDef("Sales Manager", width = 22.0),
-                    XlsxGenerator.ColumnDef("Total Cards", width = 16.0, isNumeric = true, isCenter = true)
+                OfficerSummary(
+                    employeeId = empId,
+                    employeeName = first.employeeName.uppercase(Locale.getDefault()),
+                    branch = first.branch,
+                    zone = first.zone,
+                    salesManager = first.salesManager,
+                    total = cardCount,
+                    target = yearlyTarget,
+                    short = short,
+                    achievementRate = rate,
+                    achievementStr = rateStr
                 )
+            }.sortedByDescending { it.achievementRate }
 
-                val summaryRows = grouped.mapIndexed { idx, (first, count) ->
-                    listOf<Any?>(
-                        (idx + 1).toLong(),
-                        first.month,
-                        first.employeeId,
-                        first.employeeName,
-                        first.branch,
-                        first.zone,
-                        first.salesManager,
-                        count.toLong()
-                    )
+            val totalAchievedSum = officerSummaries.sumOf { it.total }
+            val totalTargetSum = officerSummaries.sumOf { it.target }
+            val totalShortSum = officerSummaries.sumOf { it.short }
+            val overallRate = if (totalTargetSum > 0) (totalAchievedSum.toDouble() / totalTargetSum.toDouble()) * 100.0 else 0.0
+            val overallRateStr = String.format(Locale.US, "%.1f%%", overallRate)
+
+            // Dynamic columns matching the uploaded Excel image layout:
+            // Branch | Branch Official | (Sales Manager) | (Zone) | Total | Target | SHORT | Achievemnet
+            val summaryCols = mutableListOf<XlsxGenerator.ColumnDef>()
+            summaryCols.add(XlsxGenerator.ColumnDef("Branch", width = 24.0, isBold = false))
+            summaryCols.add(XlsxGenerator.ColumnDef("Branch Official", width = 26.0, isBold = true))
+            if (includeSalesManager) {
+                summaryCols.add(XlsxGenerator.ColumnDef("Sales Manager", width = 24.0, isBold = false))
+            }
+            if (includeZone) {
+                summaryCols.add(XlsxGenerator.ColumnDef("Zone", width = 14.0, isCenter = true, isBold = false))
+            }
+            summaryCols.add(XlsxGenerator.ColumnDef("Total", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            summaryCols.add(XlsxGenerator.ColumnDef("Target", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            summaryCols.add(XlsxGenerator.ColumnDef("SHORT", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            summaryCols.add(XlsxGenerator.ColumnDef("Achievemnet", width = 16.0, isCenter = true, isBold = true, isAchievement = true))
+
+            val summaryRows = officerSummaries.map { officer ->
+                val row = mutableListOf<Any?>()
+                row.add(officer.branch)
+                row.add(officer.employeeName)
+                if (includeSalesManager) {
+                    row.add(officer.salesManager)
                 }
-
-                val summaryTotalRow = listOf<Any?>(
-                    "",
-                    "",
-                    "",
-                    "TOTAL",
-                    "",
-                    "",
-                    "",
-                    totalCards.toLong()
-                )
-
-                val summaryMeta = listOf(
-                    "Exported On:" to nowFormatted,
-                    "Total Active Officers:" to totalOfficers.toString(),
-                    "Total Cards Issued:" to totalCards.toString()
-                )
-
-                sheets.add(
-                    XlsxGenerator.SheetDef(
-                        name = "Performance Summary",
-                        reportTitle = "EMPLOYEE PERFORMANCE SUMMARY",
-                        period = monthRange,
-                        metadata = summaryMeta,
-                        columns = summaryCols,
-                        rows = summaryRows,
-                        totalRow = summaryTotalRow
-                    )
-                )
+                if (includeZone) {
+                    row.add(officer.zone)
+                }
+                row.add(officer.total.toLong())
+                row.add(officer.target.toLong())
+                row.add(officer.short.toLong())
+                row.add(officer.achievementStr)
+                row
             }
 
-            // Add Detailed Sheet if FULL or DETAILS
-            if (mode == XlsxReportMode.FULL || mode == XlsxReportMode.DETAILS) {
+            val summaryTotalRow = mutableListOf<Any?>()
+            summaryTotalRow.add("Total")
+            summaryTotalRow.add("")
+            if (includeSalesManager) {
+                summaryTotalRow.add("")
+            }
+            if (includeZone) {
+                summaryTotalRow.add("")
+            }
+            summaryTotalRow.add(totalAchievedSum.toLong())
+            summaryTotalRow.add(totalTargetSum.toLong())
+            summaryTotalRow.add(totalShortSum.toLong())
+            summaryTotalRow.add(overallRateStr)
+
+            val summaryMeta = listOf(
+                "Print / Generated Date:" to nowFormatted,
+                "Total Active Officers:" to "${officerSummaries.size} Officers",
+                "Total Search Records:" to "${data.size} items"
+            )
+
+            sheets.add(
+                XlsxGenerator.SheetDef(
+                    name = "Performance Summary",
+                    reportTitle = "EMPLOYEE PERFORMANCE REPORT",
+                    period = monthRange,
+                    metadata = summaryMeta,
+                    columns = summaryCols,
+                    rows = summaryRows,
+                    totalRow = summaryTotalRow,
+                    enableAutoFilter = true
+                )
+            )
+
+            // Sheet 2: Optional Applicant / Cards Details
+            if (includeApplicantDetails) {
                 val details = data.filter { !it.limit.equals("NIL", ignoreCase = true) }
                 val detailCols = listOf(
                     XlsxGenerator.ColumnDef("SL", width = 8.0, isNumeric = true, isCenter = true),
                     XlsxGenerator.ColumnDef("Month", width = 16.0, isCenter = true),
                     XlsxGenerator.ColumnDef("Employee ID", width = 16.0, isCenter = true),
-                    XlsxGenerator.ColumnDef("Officer Name", width = 26.0),
+                    XlsxGenerator.ColumnDef("Officer Name", width = 26.0, isBold = true),
                     XlsxGenerator.ColumnDef("Branch", width = 22.0),
-                    XlsxGenerator.ColumnDef("Zone", width = 18.0, isCenter = true),
+                    XlsxGenerator.ColumnDef("Zone", width = 16.0, isCenter = true),
                     XlsxGenerator.ColumnDef("Sales Manager", width = 22.0),
                     XlsxGenerator.ColumnDef("Applicant Name", width = 26.0),
                     XlsxGenerator.ColumnDef("Account No", width = 22.0, isCenter = true),
@@ -508,13 +813,14 @@ object ReportExporter {
 
                 sheets.add(
                     XlsxGenerator.SheetDef(
-                        name = "Applicant Records",
+                        name = "Applicant Details",
                         reportTitle = "FULL APPLICANT PERFORMANCE RECORDS",
                         period = monthRange,
                         metadata = detailMeta,
                         columns = detailCols,
                         rows = detailRows,
-                        totalRow = detailTotalRow
+                        totalRow = detailTotalRow,
+                        enableAutoFilter = true
                     )
                 )
             }
@@ -542,46 +848,119 @@ object ReportExporter {
     }
 
     private fun getDownloadStream(context: Context, fileName: String, mimeType: String): Pair<Uri?, OutputStream?> {
-        val cv = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+        return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                val cv = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
+                val stream = uri?.let { context.contentResolver.openOutputStream(it) }
+                if (uri != null && stream != null) {
+                    Pair(uri, stream)
+                } else {
+                    fallbackLocalFile(context, fileName)
+                }
+            } else {
+                val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadDir.exists()) downloadDir.mkdirs()
+                val file = File(downloadDir, fileName)
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val stream = FileOutputStream(file)
+                Pair(uri, stream)
             }
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            fallbackLocalFile(context, fileName)
         }
-        val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
-        val stream = uri?.let { context.contentResolver.openOutputStream(it) }
-        return Pair(uri, stream)
+    }
+
+    private fun fallbackLocalFile(context: Context, fileName: String): Pair<Uri?, OutputStream?> {
+        return try {
+            val dir = File(context.cacheDir, "reports").apply { if (!exists()) mkdirs() }
+            val file = File(dir, fileName)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val stream = FileOutputStream(file)
+            Pair(uri, stream)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(null, null)
+        }
     }
 
     private fun showNotification(context: Context, fileName: String, fileUri: Uri?, mimeType: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Report Downloads", NotificationManager.IMPORTANCE_DEFAULT)
-            notificationManager.createNotificationChannel(channel)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    "Report Downloads",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifications for downloaded performance reports (PDF & Excel)"
+                    enableLights(true)
+                    enableVibration(true)
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val isPdf = mimeType.contains("pdf", ignoreCase = true) || fileName.endsWith(".pdf", ignoreCase = true)
+            val isExcel = mimeType.contains("spreadsheet", ignoreCase = true) || fileName.endsWith(".xlsx", ignoreCase = true)
+
+            val title = when {
+                isPdf -> "📄 PDF Report Downloaded"
+                isExcel -> "📊 Excel Report Downloaded"
+                else -> "📥 Report Downloaded"
+            }
+
+            val openIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(fileUri, mimeType)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                (System.currentTimeMillis() % 100000).toInt(),
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, fileUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val sharePendingIntent = PendingIntent.getActivity(
+                context,
+                ((System.currentTimeMillis() + 1) % 100000).toInt(),
+                Intent.createChooser(shareIntent, "Share Report"),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setContentTitle(title)
+                .setContentText(fileName)
+                .setStyle(
+                    NotificationCompat.BigTextStyle()
+                        .setBigContentTitle(title)
+                        .bigText("File: $fileName\nLocation: Downloads folder\nTap to open or share.")
+                )
+                .setContentIntent(pendingIntent)
+                .addAction(android.R.drawable.ic_menu_view, "Open", pendingIntent)
+                .addAction(android.R.drawable.ic_menu_share, "Share", sharePendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setAutoCancel(true)
+                .build()
+
+            notificationManager.notify((System.currentTimeMillis() % 100000).toInt(), notification)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(fileUri, mimeType)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("Report Ready")
-            .setContentText(fileName)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 }

@@ -112,6 +112,23 @@
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Email Address -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/CustomOutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="Email Address (Required for Password Recovery)"
+            app:startIconDrawable="@drawable/ic_search">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEditProfileEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textEmailAddress"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- Official Number -->
         <com.google.android.material.textfield.TextInputLayout
             style="@style/CustomOutlinedBox"
@@ -259,7 +276,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCancelEditProfile"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="50dp"
                 android:layout_marginEnd="8dp"

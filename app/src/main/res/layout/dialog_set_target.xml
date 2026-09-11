@@ -90,11 +90,11 @@
                 android:paddingHorizontal="8dp" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Target Cards Input -->
+        <!-- Monthly Target Cards Input -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Target Cards Count"
+            android:text="Monthly Target (Cards)"
             android:textSize="12sp"
             android:textColor="@color/text_secondary"
             android:textStyle="bold"
@@ -104,7 +104,7 @@
             android:id="@+id/tilTargetCards"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="14dp"
             app:boxCornerRadiusTopStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
@@ -117,7 +117,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:hint="Enter target cards (e.g. 20)"
+                android:hint="Monthly target cards (e.g. 20)"
+                android:textSize="15sp"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Yearly Target Cards Input -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Yearly Target (Cards)"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilYearlyTargetCards"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:boxStrokeColor="@color/primary"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etYearlyTargetCards"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:hint="Yearly target cards (e.g. 240)"
                 android:textSize="15sp"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -131,7 +163,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCancelTarget"
-                style="@style/Widget.Material3.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
                 android:text="Cancel"

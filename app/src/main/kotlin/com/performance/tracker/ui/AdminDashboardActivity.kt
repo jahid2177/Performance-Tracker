@@ -1,5 +1,6 @@
 package com.performance.tracker.ui
 
+import android.app.Dialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -8,7 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
@@ -21,11 +24,16 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -87,6 +95,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         setupRecyclerView()
         setupButtons()
         setupTrendChart()
+        setupExitNavigation()
         
         if (userRole.equals("Sales Manager", ignoreCase = true)) {
             binding.tvHeaderTitle.text = "Manager Dashboard"
@@ -95,6 +104,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
         
         loadDashboardData()
+        checkNotificationPermission()
         
         binding.btnRefresh.setOnClickListener {
             Toast.makeText(this, "Refreshing data...", Toast.LENGTH_SHORT).show()
@@ -109,6 +119,57 @@ class AdminDashboardActivity : AppCompatActivity() {
                 putExtra("USER_NAME", userName)
             }
             startActivity(intent)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkSettingsRedDot()
+        checkPendingApprovalsBadge()
+        com.performance.tracker.util.UpdateManager.checkForAppUpdate(this)
+    }
+
+    private fun checkPendingApprovalsBadge() {
+        db.collection("employees")
+            .whereEqualTo("status", "Pending")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val count = snapshot.size()
+                if (count > 0) {
+                    binding.btnApproval.text = "Approval ($count)"
+                    binding.btnApproval.setBackgroundColor(Color.parseColor("#FEE2E2"))
+                    binding.btnApproval.setTextColor(Color.parseColor("#DC2626"))
+                } else {
+                    binding.btnApproval.text = "Approval List"
+                    binding.btnApproval.setBackgroundColor(Color.parseColor("#DCFCE7"))
+                    binding.btnApproval.setTextColor(Color.parseColor("#15803D"))
+                }
+            }
+    }
+
+    private fun checkSettingsRedDot() {
+        val email = com.performance.tracker.util.SessionManager.getUserEmail(this)
+        if (email.isNotBlank()) {
+            binding.viewAdminSettingsRedDot.visibility = View.GONE
+        } else {
+            val userId = intent.getStringExtra("USER_ID") ?: com.performance.tracker.util.SessionManager.getUserId(this)
+            if (userId.isNotEmpty()) {
+                db.collection("employees").document(userId).get()
+                    .addOnSuccessListener { doc ->
+                        val remoteEmail = doc.getString("email") ?: ""
+                        if (remoteEmail.isNotBlank()) {
+                            com.performance.tracker.util.SessionManager.saveUser(this, userId, userRole, userName, remoteEmail)
+                            binding.viewAdminSettingsRedDot.visibility = View.GONE
+                        } else {
+                            binding.viewAdminSettingsRedDot.visibility = View.VISIBLE
+                        }
+                    }
+                    .addOnFailureListener {
+                        binding.viewAdminSettingsRedDot.visibility = View.VISIBLE
+                    }
+            } else {
+                binding.viewAdminSettingsRedDot.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -235,33 +296,40 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
 
         binding.btnFilterMonthWise?.setOnClickListener { 
-            if (allReports.isEmpty()) return@setOnClickListener
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No performance data available", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             showMonthSelectionGrid()
         }
         binding.btnFilterRanking?.setOnClickListener {
-            if (allReports.isEmpty()) return@setOnClickListener
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No performance data available", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             showRankingDialog()
         }
         binding.btnFilterIndividual.setOnClickListener { 
-            if (allReports.isEmpty()) return@setOnClickListener
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No performance data available", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val uniqueEmployees = allReports.distinctBy { it.employeeId }.sortedBy { it.employeeName }
-            showEmployeeListDialog("Select Employee", uniqueEmployees)
+            showEmployeeListDialog("Individual Officers", "Select an officer to view full performance analytics", uniqueEmployees)
         }
         binding.btnFilterZone.setOnClickListener { 
-            if (allReports.isEmpty()) return@setOnClickListener
-            val uniqueZones = allReports.map { it.zone.uppercase().trim() }.filter { it.isNotEmpty() }.distinct().sorted()
-            showCategoryDialog("Select Zone", uniqueZones) { selectedZone ->
-                val empInZone = allReports.filter { it.zone.equals(selectedZone, ignoreCase = true) }.distinctBy { it.employeeId }
-                showEmployeeListDialog("Employees in $selectedZone", empInZone)
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No performance data available", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            showZoneDialog()
         }
         binding.btnFilterTeam.setOnClickListener { 
-            if (allReports.isEmpty()) return@setOnClickListener
-            val uniqueManagers = allReports.map { it.salesManager.uppercase().trim() }.filter { it.isNotEmpty() }.distinct().sorted()
-            showCategoryDialog("Select Manager", uniqueManagers) { selectedManager ->
-                val empUnderManager = allReports.filter { it.salesManager.equals(selectedManager, ignoreCase = true) }.distinctBy { it.employeeId }
-                showEmployeeListDialog("Team: $selectedManager", empUnderManager)
+            if (allReports.isEmpty()) {
+                Toast.makeText(this, "No performance data available", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            showManagerTeamDialog()
         }
 
         binding.btnOfficerList.setOnClickListener { startActivity(Intent(this, OfficerListActivity::class.java)) }
@@ -484,38 +552,54 @@ class AdminDashboardActivity : AppCompatActivity() {
     // ========================================================
     // 🔥 OpenPDF, Kotlin-CSV & Standard XLSX: Performance Report Exports
     // ========================================================
-    private enum class ReportFormatOption { XLSX, CSV, PDF }
+    private val cachedOfficerYearlyTargets = mutableMapOf<String, Int>()
 
     private fun showExportDialog(defaultFormatIsPdf: Boolean) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_export_report, null)
         val spinnerFrom = dialogView.findViewById<Spinner>(R.id.spinnerFromMonth)
         val spinnerTo = dialogView.findViewById<Spinner>(R.id.spinnerToMonth)
+        val cbAllMonths = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbAllMonths)
+        val tvRecordCount = dialogView.findViewById<TextView>(R.id.tvExportRecordCount)
+        val layoutMonthSpinners = dialogView.findViewById<View>(R.id.layoutMonthSpinners)
         val btnDownload = dialogView.findViewById<Button>(R.id.btnDownloadReport)
         val btnShare = dialogView.findViewById<Button>(R.id.btnShareReport)
         val tvTitle = dialogView.findViewById<TextView>(R.id.tvExportTitle)
-        val rgFormat = dialogView.findViewById<RadioGroup>(R.id.rgExportFormat)
-        val rbXlsx = dialogView.findViewById<RadioButton>(R.id.rbFormatXlsx)
-        val rbCsv = dialogView.findViewById<RadioButton>(R.id.rbFormatCsv)
-        val rbPdf = dialogView.findViewById<RadioButton>(R.id.rbFormatPdf)
-        val rgExportType = dialogView.findViewById<RadioGroup>(R.id.rgExportType)
-        val rbFullReport = dialogView.findViewById<RadioButton>(R.id.rbFullReport)
+        val layoutFormatSelection = dialogView.findViewById<View>(R.id.layoutFormatSelection)
+        val layoutPdfContentOptions = dialogView.findViewById<View>(R.id.layoutPdfContentOptions)
+        val layoutExcelContentOptions = dialogView.findViewById<View>(R.id.layoutExcelContentOptions)
         val rbSummary = dialogView.findViewById<RadioButton>(R.id.rbSummary)
-        val rbDetails = dialogView.findViewById<RadioButton>(R.id.rbDetails)
+        val cbExcelZone = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbExcelZone)
+        val cbExcelSalesManager = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbExcelSalesManager)
+        val cbExcelApplicantDetails = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbExcelApplicantDetails)
 
-        if (defaultFormatIsPdf) {
-            rbPdf.isChecked = true
-            tvTitle.text = "Monthly Performance Report (PDF)"
-        } else {
-            rbXlsx.isChecked = true
-            tvTitle.text = "Employee Performance Export (Excel .xlsx)"
+        // Always hide format selection radio group as per requirement
+        layoutFormatSelection.visibility = View.GONE
+
+        // Refresh targets from Firestore cache (yearly target prioritized, or monthly target * 12)
+        db.collection("employees").get().addOnSuccessListener { snapshot ->
+            snapshot.documents.forEach { doc ->
+                val empId = doc.getString("employeeId") ?: ""
+                val monthly = doc.getLong("monthlyTarget")?.toInt() ?: 0
+                val yearly = doc.getLong("yearlyTarget")?.toInt() ?: 0
+                val calculatedYearly = if (yearly > 0) yearly else if (monthly > 0) monthly * 12 else 0
+                if (empId.isNotBlank() && calculatedYearly > 0) {
+                    cachedOfficerYearlyTargets[empId] = calculatedYearly
+                }
+            }
         }
 
-        rgFormat.setOnCheckedChangeListener { _, checkedId ->
-            when (checkedId) {
-                R.id.rbFormatXlsx -> tvTitle.text = "Employee Performance Export (Excel .xlsx)"
-                R.id.rbFormatCsv -> tvTitle.text = "Employee Performance Export (CSV)"
-                R.id.rbFormatPdf -> tvTitle.text = "Monthly Performance Report (PDF)"
-            }
+        if (defaultFormatIsPdf) {
+            tvTitle.text = "Monthly Performance Report (PDF)"
+            layoutPdfContentOptions.visibility = View.VISIBLE
+            layoutExcelContentOptions.visibility = View.GONE
+            btnDownload.text = "Download PDF"
+            btnShare.text = "Share PDF"
+        } else {
+            tvTitle.text = "Export Performance Report (Excel)"
+            layoutPdfContentOptions.visibility = View.GONE
+            layoutExcelContentOptions.visibility = View.VISIBLE
+            btnDownload.text = "Download Excel"
+            btnShare.text = "Share Excel"
         }
 
         val monthAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, monthsList)
@@ -523,38 +607,119 @@ class AdminDashboardActivity : AppCompatActivity() {
         spinnerTo.adapter = monthAdapter
 
         val currentMonth = SimpleDateFormat("MMMM", Locale.getDefault()).format(Date())
-        val monthIdx = monthsList.indexOf(currentMonth)
+        val availableMonthsInReports = allReports.map { it.month.trim() }.filter { it.isNotBlank() }.distinct()
+
+        val defaultMonth = if (availableMonthsInReports.contains(currentMonth) || availableMonthsInReports.isEmpty()) {
+            currentMonth
+        } else {
+            availableMonthsInReports.first()
+        }
+
+        val monthIdx = monthsList.indexOf(defaultMonth)
         if (monthIdx >= 0) {
             spinnerFrom.setSelection(monthIdx)
             spinnerTo.setSelection(monthIdx)
         }
 
+        fun getSelectedData(): List<Performance> {
+            return if (cbAllMonths.isChecked) {
+                allReports
+            } else {
+                val fromIdx = spinnerFrom.selectedItemPosition
+                val toIdx = spinnerTo.selectedItemPosition
+                if (fromIdx in monthsList.indices && toIdx in monthsList.indices && fromIdx <= toIdx) {
+                    val selected = monthsList.subList(fromIdx, toIdx + 1)
+                    allReports.filter { r ->
+                        selected.any { sm -> sm.equals(r.month.trim(), ignoreCase = true) || r.month.contains(sm, ignoreCase = true) }
+                    }
+                } else emptyList()
+            }
+        }
+
+        fun updateLiveRecordCount() {
+            val matching = getSelectedData()
+            if (matching.isEmpty()) {
+                tvRecordCount.text = "⚠️ 0 records found in this range"
+                tvRecordCount.setTextColor(Color.parseColor("#D32F2F"))
+            } else {
+                tvRecordCount.text = "✓ Found ${matching.size} records ready to export"
+                tvRecordCount.setTextColor(Color.parseColor("#2E7D32"))
+            }
+        }
+
+        cbAllMonths.setOnCheckedChangeListener { _, isChecked ->
+            layoutMonthSpinners.visibility = if (isChecked) View.GONE else View.VISIBLE
+            updateLiveRecordCount()
+        }
+
+        val monthSelectListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                updateLiveRecordCount()
+            }
+            override fun onNothingSelected(p0: AdapterView<*>?) {}
+        }
+        spinnerFrom.onItemSelectedListener = monthSelectListener
+        spinnerTo.onItemSelectedListener = monthSelectListener
+
+        updateLiveRecordCount()
+
         val dialog = AlertDialog.Builder(this).setView(dialogView).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         val handleExport = { isShare: Boolean ->
+            val isAll = cbAllMonths.isChecked
             val fromMonth = spinnerFrom.selectedItem.toString()
             val toMonth = spinnerTo.selectedItem.toString()
-            val fromIdx = monthsList.indexOf(fromMonth)
-            val toIdx = monthsList.indexOf(toMonth)
+            val fromIdx = spinnerFrom.selectedItemPosition
+            val toIdx = spinnerTo.selectedItemPosition
 
-            if (fromIdx > toIdx) {
+            if (!isAll && fromIdx > toIdx) {
                 Toast.makeText(this, "Invalid Range: 'From Month' cannot be after 'To Month'", Toast.LENGTH_LONG).show()
             } else {
-                val selectedMonths = monthsList.subList(fromIdx, toIdx + 1)
-                val format = when {
-                    rbXlsx.isChecked -> ReportFormatOption.XLSX
-                    rbCsv.isChecked -> ReportFormatOption.CSV
-                    else -> ReportFormatOption.PDF
-                }
-                val scope = when {
-                    rbDetails.isChecked -> ReportExporter.XlsxReportMode.DETAILS
-                    rbSummary.isChecked -> ReportExporter.XlsxReportMode.SUMMARY
-                    else -> ReportExporter.XlsxReportMode.FULL
-                }
+                val selectedMonths = if (isAll) monthsList else monthsList.subList(fromIdx, toIdx + 1)
+                val isPdfSummary = rbSummary.isChecked
+                val includeZone = cbExcelZone.isChecked
+                val includeSalesManager = cbExcelSalesManager.isChecked
+                val includeApplicantDetails = cbExcelApplicantDetails.isChecked
 
                 dialog.dismiss()
-                executeExport(selectedMonths, format, fromMonth, toMonth, scope, isShare)
+
+                val filteredData = if (isAll) {
+                    allReports
+                } else {
+                    allReports.filter { r ->
+                        selectedMonths.any { sm -> sm.equals(r.month.trim(), ignoreCase = true) || r.month.contains(sm, ignoreCase = true) }
+                    }
+                }
+
+                if (filteredData.isEmpty()) {
+                    Toast.makeText(this, "No records found for the selected period", Toast.LENGTH_SHORT).show()
+                } else {
+                    val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
+                    val monthRange = if (isAll) "All Months $year" else if (fromMonth == toMonth) "$fromMonth $year" else "$fromMonth to $toMonth $year"
+
+                    if (defaultFormatIsPdf) {
+                        ReportExporter.generateMonthlyPdf(
+                            context = this,
+                            data = filteredData,
+                            monthRange = monthRange,
+                            managerName = if (userRole.equals("Sales Manager", ignoreCase = true)) userName else "",
+                            isSummary = isPdfSummary,
+                            isShare = isShare
+                        )
+                    } else {
+                        ReportExporter.exportPerformanceXlsx(
+                            context = this,
+                            data = filteredData,
+                            monthRange = monthRange,
+                            officerTargets = cachedOfficerYearlyTargets,
+                            includeZone = includeZone,
+                            includeSalesManager = includeSalesManager,
+                            includeApplicantDetails = includeApplicantDetails,
+                            isShare = isShare
+                        )
+                    }
+                }
             }
         }
 
@@ -562,56 +727,6 @@ class AdminDashboardActivity : AppCompatActivity() {
         btnShare.setOnClickListener { handleExport(true) }
 
         dialog.show()
-    }
-
-    private fun executeExport(
-        selectedMonths: List<String>,
-        format: ReportFormatOption,
-        fromMonth: String,
-        toMonth: String,
-        scope: ReportExporter.XlsxReportMode,
-        isShare: Boolean
-    ) {
-        val filteredData = allReports.filter { selectedMonths.contains(it.month) }
-
-        if (filteredData.isEmpty()) { 
-            Toast.makeText(this, "No records found for the selected period", Toast.LENGTH_SHORT).show()
-            return 
-        }
-
-        val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
-        val monthRange = if (fromMonth == toMonth) "$fromMonth $year" else "$fromMonth to $toMonth $year"
-
-        when (format) {
-            ReportFormatOption.XLSX -> {
-                ReportExporter.exportPerformanceXlsx(
-                    context = this,
-                    data = filteredData,
-                    monthRange = monthRange,
-                    mode = scope,
-                    isShare = isShare
-                )
-            }
-            ReportFormatOption.CSV -> {
-                ReportExporter.exportPerformanceCsv(
-                    context = this,
-                    data = filteredData,
-                    monthRange = monthRange,
-                    isSummary = (scope == ReportExporter.XlsxReportMode.SUMMARY),
-                    isShare = isShare
-                )
-            }
-            ReportFormatOption.PDF -> {
-                ReportExporter.generateMonthlyPdf(
-                    context = this,
-                    data = filteredData,
-                    monthRange = monthRange,
-                    managerName = if (userRole.equals("Sales Manager", ignoreCase = true)) userName else "",
-                    isSummary = (scope == ReportExporter.XlsxReportMode.SUMMARY),
-                    isShare = isShare
-                )
-            }
-        }
     }
 
     // ========================================================
@@ -628,11 +743,11 @@ class AdminDashboardActivity : AppCompatActivity() {
         
         val count = groupedList.size
         if (count == 0) {
-            binding.tvFilterStatus.text = "0 card"
+            binding.tvFilterStatus.text = "Viewing: $month (0 Employee)"
             binding.tvFilterStatus.setTextColor(Color.RED)
         } else {
-            val cardText = if(count == 1) "1 card" else "$count cards"
-            binding.tvFilterStatus.text = "Viewing: $month ($cardText)"
+            val empText = if (count == 1) "1 Employee" else "$count Employee"
+            binding.tvFilterStatus.text = "Viewing: $month ($empText)"
             binding.tvFilterStatus.setTextColor(Color.parseColor("#3F51B5"))
         }
     }
@@ -648,11 +763,11 @@ class AdminDashboardActivity : AppCompatActivity() {
         
         val count = groupedList.size
         if (count == 0) {
-            binding.tvFilterStatus.text = "0 card"
+            binding.tvFilterStatus.text = "Viewing: $empName (0 months)"
             binding.tvFilterStatus.setTextColor(Color.RED)
         } else {
-            val cardText = if(count == 1) "1 card" else "$count cards"
-            binding.tvFilterStatus.text = "Viewing: $empName ($cardText)"
+            val monthText = if (count == 1) "1 month" else "$count months"
+            binding.tvFilterStatus.text = "Viewing: $empName ($monthText)"
             binding.tvFilterStatus.setTextColor(Color.parseColor("#2196F3"))
         }
 
@@ -678,164 +793,646 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun showRankingDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_employee_search, null)
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvDialogTitle)
-        val etSearch = dialogView.findViewById<EditText>(R.id.etSearchEmployee)
-        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerEmployeeList)
+        val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_ranking, null)
+        dialog.setContentView(dialogView)
 
-        tvTitle.text = "Overall Ranking (Top Submissions)"
-        etSearch.visibility = View.GONE
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
+        }
 
-        val rankedList = allReports.groupBy { it.employeeName }
-            .map { Pair(it.key, it.value.size) }
-            .sortedByDescending { it.second }
+        val btnClose = dialogView.findViewById<ImageButton>(R.id.btnRankingClose)
+        val tvTotalRankedCount = dialogView.findViewById<TextView>(R.id.tvTotalRankedCount)
+        val tvPodiumRank1Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank1Name)
+        val tvPodiumRank1Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank1Score)
+        val tvPodiumRank2Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank2Name)
+        val tvPodiumRank2Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank2Score)
+        val tvPodiumRank3Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank3Name)
+        val tvPodiumRank3Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank3Score)
+        val etSearch = dialogView.findViewById<EditText>(R.id.etRankingSearch)
+        val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearRankingSearch)
+        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenRanking)
+        val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutRankingEmpty)
 
-        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        // Group and rank all officers
+        val officerReportsMap = allReports.groupBy { it.employeeName.trim() }
+        val rawRanked = officerReportsMap.map { (_, reports) ->
+            val sample = reports.first()
+            val totalCards = reports.size
+            Pair(sample, totalCards)
+        }.sortedByDescending { it.second }
+
+        val rankedList = rawRanked.mapIndexed { index, pair ->
+            ModernRankingEntry(
+                rank = index + 1,
+                employeeId = pair.first.employeeId,
+                employeeName = pair.first.employeeName,
+                branch = pair.first.branch,
+                zone = pair.first.zone,
+                score = pair.second
+            )
+        }
+
+        tvTotalRankedCount.text = "${rankedList.size} Officers"
+
+        // Populate Podium Highlights
+        if (rankedList.isNotEmpty()) {
+            val first = rankedList[0]
+            tvPodiumRank1Name.text = first.employeeName
+            tvPodiumRank1Score.text = "${first.score} cards"
+        }
+        if (rankedList.size > 1) {
+            val second = rankedList[1]
+            tvPodiumRank2Name.text = second.employeeName
+            tvPodiumRank2Score.text = "${second.score} cards"
+        }
+        if (rankedList.size > 2) {
+            val third = rankedList[2]
+            tvPodiumRank3Name.text = third.employeeName
+            tvPodiumRank3Score.text = "${third.score} cards"
+        }
+
+        val adapter = FullscreenRankingAdapter(rankedList) { selectedEntry ->
+            dialog.dismiss()
+            filterDashboardByEmployee(selectedEntry.employeeId, selectedEntry.employeeName)
+        }
+
         recycler.layoutManager = LinearLayoutManager(this)
-        recycler.adapter = RankingAdapter(rankedList)
+        recycler.adapter = adapter
+
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s?.toString()?.trim() ?: ""
+                btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+                val filtered = if (query.isEmpty()) {
+                    rankedList
+                } else {
+                    rankedList.filter {
+                        it.employeeName.contains(query, ignoreCase = true) ||
+                        it.employeeId.contains(query, ignoreCase = true) ||
+                        it.branch.contains(query, ignoreCase = true) ||
+                        it.zone.contains(query, ignoreCase = true)
+                    }
+                }
+                adapter.updateList(filtered)
+                layoutEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                recycler.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
+            }
+            override fun afterTextChanged(s: Editable?) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        })
+
+        btnClearSearch.setOnClickListener { etSearch.setText("") }
         dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    }
+
+    private fun showManagerTeamDialog() {
+        val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_filter, null)
+        dialog.setContentView(dialogView)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
+        }
+
+        val btnClose = dialogView.findViewById<ImageButton>(R.id.btnFilterClose)
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderTitle)
+        val tvSubtitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderSubtitle)
+        val tvItemCount = dialogView.findViewById<TextView>(R.id.tvFilterItemCount)
+        val etSearch = dialogView.findViewById<EditText>(R.id.etFilterSearch)
+        val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearFilterSearch)
+        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenFilter)
+        val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutFilterEmpty)
+
+        tvTitle.text = "Sales Managers & Teams"
+        tvSubtitle.text = "Select a manager to view team members and performance"
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        val managerGroups = allReports.filter { it.salesManager.isNotBlank() }
+            .groupBy { it.salesManager.trim() }
+
+        val categoryList = managerGroups.map { (managerName, reports) ->
+            val officers = reports.distinctBy { it.employeeId }
+            val totalCards = reports.size
+            val branches = officers.map { it.branch }.filter { it.isNotBlank() }.distinct().take(3).joinToString(", ")
+            val branchText = if (branches.isNotBlank()) " • $branches" else ""
+            ModernCategoryEntry(
+                name = managerName,
+                officersCount = officers.size,
+                totalCards = totalCards,
+                branches = "${officers.size} Officers • $totalCards Cards$branchText",
+                iconRes = R.drawable.ic_supervisor
+            )
+        }.sortedByDescending { it.totalCards }
+
+        tvItemCount.text = "${categoryList.size} Managers"
+
+        val adapter = FullscreenCategoryAdapter(categoryList) { selectedCategory ->
+            val empUnderManager = allReports.filter { it.salesManager.equals(selectedCategory.name, ignoreCase = true) }
+                .distinctBy { it.employeeId }
+            showEmployeeListDialog(
+                title = "Team: ${selectedCategory.name}",
+                subtitle = "Total ${empUnderManager.size} active officers under this manager",
+                employeeList = empUnderManager
+            )
+        }
+
+        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.adapter = adapter
+
+        etSearch.hint = "Search manager name or branch..."
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s?.toString()?.trim() ?: ""
+                btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+                val filtered = if (query.isEmpty()) {
+                    categoryList
+                } else {
+                    categoryList.filter {
+                        it.name.contains(query, ignoreCase = true) ||
+                        it.branches.contains(query, ignoreCase = true)
+                    }
+                }
+                adapter.updateList(filtered)
+                layoutEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                recycler.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
+            }
+            override fun afterTextChanged(s: Editable?) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        })
+
+        btnClearSearch.setOnClickListener { etSearch.setText("") }
+        dialog.show()
+    }
+
+    private fun showZoneDialog() {
+        val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_filter, null)
+        dialog.setContentView(dialogView)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
+        }
+
+        val btnClose = dialogView.findViewById<ImageButton>(R.id.btnFilterClose)
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderTitle)
+        val tvSubtitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderSubtitle)
+        val tvItemCount = dialogView.findViewById<TextView>(R.id.tvFilterItemCount)
+        val etSearch = dialogView.findViewById<EditText>(R.id.etFilterSearch)
+        val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearFilterSearch)
+        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenFilter)
+        val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutFilterEmpty)
+
+        tvTitle.text = "Regional Zones"
+        tvSubtitle.text = "Select a regional zone to inspect branch performance"
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        val zoneGroups = allReports.filter { it.zone.isNotBlank() }
+            .groupBy { it.zone.trim() }
+
+        val categoryList = zoneGroups.map { (zoneName, reports) ->
+            val officers = reports.distinctBy { it.employeeId }
+            val totalCards = reports.size
+            val branches = officers.map { it.branch }.filter { it.isNotBlank() }.distinct().take(3).joinToString(", ")
+            val branchText = if (branches.isNotBlank()) " • $branches" else ""
+            ModernCategoryEntry(
+                name = zoneName,
+                officersCount = officers.size,
+                totalCards = totalCards,
+                branches = "${officers.size} Officers • $totalCards Cards$branchText",
+                iconRes = R.drawable.ic_location
+            )
+        }.sortedByDescending { it.totalCards }
+
+        tvItemCount.text = "${categoryList.size} Zones"
+
+        val adapter = FullscreenCategoryAdapter(categoryList) { selectedCategory ->
+            val empInZone = allReports.filter { it.zone.equals(selectedCategory.name, ignoreCase = true) }
+                .distinctBy { it.employeeId }
+            showEmployeeListDialog(
+                title = "Zone: ${selectedCategory.name}",
+                subtitle = "Total ${empInZone.size} officers operating in this zone",
+                employeeList = empInZone
+            )
+        }
+
+        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.adapter = adapter
+
+        etSearch.hint = "Search zone name or branch..."
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s?.toString()?.trim() ?: ""
+                btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+                val filtered = if (query.isEmpty()) {
+                    categoryList
+                } else {
+                    categoryList.filter {
+                        it.name.contains(query, ignoreCase = true) ||
+                        it.branches.contains(query, ignoreCase = true)
+                    }
+                }
+                adapter.updateList(filtered)
+                layoutEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                recycler.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
+            }
+            override fun afterTextChanged(s: Editable?) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        })
+
+        btnClearSearch.setOnClickListener { etSearch.setText("") }
+        dialog.show()
+    }
+
+    private fun showEmployeeListDialog(title: String, employeeList: List<Performance>) {
+        showEmployeeListDialog(title, "Select an officer to view full performance analytics", employeeList)
+    }
+
+    private fun showEmployeeListDialog(
+        title: String,
+        subtitle: String = "Select an officer to view full performance analytics",
+        employeeList: List<Performance>
+    ) {
+        val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_filter, null)
+        dialog.setContentView(dialogView)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
+        }
+
+        val btnClose = dialogView.findViewById<ImageButton>(R.id.btnFilterClose)
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderTitle)
+        val tvSubtitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderSubtitle)
+        val tvItemCount = dialogView.findViewById<TextView>(R.id.tvFilterItemCount)
+        val etSearch = dialogView.findViewById<EditText>(R.id.etFilterSearch)
+        val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearFilterSearch)
+        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenFilter)
+        val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutFilterEmpty)
+
+        tvTitle.text = title
+        tvSubtitle.text = subtitle
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        val officerList = employeeList.distinctBy { it.employeeId }.map { emp ->
+            val officerCards = allReports.count { it.employeeId == emp.employeeId }
+            ModernOfficerEntry(
+                employeeId = emp.employeeId,
+                name = emp.employeeName,
+                branch = emp.branch,
+                zone = emp.zone,
+                manager = emp.salesManager,
+                totalCards = officerCards
+            )
+        }.sortedByDescending { it.totalCards }
+
+        tvItemCount.text = "${officerList.size} Officers"
+
+        val adapter = FullscreenOfficerAdapter(officerList) { selectedOfficer ->
+            dialog.dismiss()
+            filterDashboardByEmployee(selectedOfficer.employeeId, selectedOfficer.name)
+        }
+
+        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.adapter = adapter
+
+        etSearch.hint = "Search by officer name, ID, branch or zone..."
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s?.toString()?.trim() ?: ""
+                btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+                val filtered = if (query.isEmpty()) {
+                    officerList
+                } else {
+                    officerList.filter {
+                        it.name.contains(query, ignoreCase = true) ||
+                        it.employeeId.contains(query, ignoreCase = true) ||
+                        it.branch.contains(query, ignoreCase = true) ||
+                        it.zone.contains(query, ignoreCase = true) ||
+                        it.manager.contains(query, ignoreCase = true)
+                    }
+                }
+                adapter.updateList(filtered)
+                layoutEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                recycler.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
+            }
+            override fun afterTextChanged(s: Editable?) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        })
+
+        btnClearSearch.setOnClickListener { etSearch.setText("") }
+        dialog.show()
     }
 
     private fun showCategoryDialog(title: String, categories: List<String>, onSelected: (String) -> Unit) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_employee_search, null)
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvDialogTitle)
-        val etSearch = dialogView.findViewById<EditText>(R.id.etSearchEmployee)
-        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerEmployeeList)
+        val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_filter, null)
+        dialog.setContentView(dialogView)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
+        }
+
+        val btnClose = dialogView.findViewById<ImageButton>(R.id.btnFilterClose)
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderTitle)
+        val tvSubtitle = dialogView.findViewById<TextView>(R.id.tvFilterHeaderSubtitle)
+        val tvItemCount = dialogView.findViewById<TextView>(R.id.tvFilterItemCount)
+        val etSearch = dialogView.findViewById<EditText>(R.id.etFilterSearch)
+        val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearFilterSearch)
+        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenFilter)
+        val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutFilterEmpty)
 
         tvTitle.text = title
-        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
-        val catAdapter = CategoryAdapter(categories) { selected -> dialog.dismiss(); onSelected(selected) }
+        tvSubtitle.text = "Select an option from below"
+        tvItemCount.text = "${categories.size} Items"
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        val categoryList = categories.map {
+            ModernCategoryEntry(
+                name = it,
+                officersCount = 0,
+                totalCards = 0,
+                branches = "Tap to view options",
+                iconRes = R.drawable.ic_officers
+            )
+        }
+
+        val catAdapter = FullscreenCategoryAdapter(categoryList) { selected ->
+            dialog.dismiss()
+            onSelected(selected.name)
+        }
+
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = catAdapter
 
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                catAdapter.updateList(categories.filter { it.lowercase().contains(s.toString().lowercase()) })
+                val query = s?.toString()?.trim() ?: ""
+                btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+                val filtered = if (query.isEmpty()) {
+                    categoryList
+                } else {
+                    categoryList.filter { it.name.contains(query, ignoreCase = true) }
+                }
+                catAdapter.updateList(filtered)
+                layoutEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                recycler.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
             }
             override fun afterTextChanged(s: Editable?) {}
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
         })
-        dialog.show()
-    }
 
-    private fun showEmployeeListDialog(title: String, employeeList: List<Performance>) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_employee_search, null)
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvDialogTitle)
-        val etSearch = dialogView.findViewById<EditText>(R.id.etSearchEmployee)
-        val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerEmployeeList)
-
-        tvTitle.text = title
-        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
-        val empAdapter = EmployeeSearchAdapter(employeeList) { selectedEmp -> dialog.dismiss(); filterDashboardByEmployee(selectedEmp.employeeId, selectedEmp.employeeName) }
-        recycler.layoutManager = LinearLayoutManager(this)
-        recycler.adapter = empAdapter
-
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                empAdapter.updateList(employeeList.filter { it.employeeName.lowercase().contains(s.toString().lowercase()) })
-            }
-            override fun afterTextChanged(s: Editable?) {}
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-        })
+        btnClearSearch.setOnClickListener { etSearch.setText("") }
         dialog.show()
     }
 
     private fun confirmDeleteGroup(summary: ReportSummary) {
         AlertDialog.Builder(this)
-            .setTitle("Confirm Deletion")
-            .setMessage("Delete records for ${summary.employeeName} (${summary.month})?")
-            .setPositiveButton("Delete") { _, _ ->
+            .setTitle("⚠️ Warning: Delete Records")
+            .setMessage("Are you sure you want to permanently delete all performance records for ${summary.employeeName} (${summary.month})?\n\nThis action cannot be undone.")
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("Yes, Delete") { _, _ ->
                 db.collection("performance").whereEqualTo("employeeId", summary.employeeId).whereEqualTo("month", summary.month)
                     .get().addOnSuccessListener { snapshot ->
                         for (doc in snapshot.documents) doc.reference.delete()
                         viewModel.getAllReports()
                         Toast.makeText(this, "Deleted successfully", Toast.LENGTH_SHORT).show()
                     }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Failed to delete: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
             }.setNegativeButton("Cancel", null).show()
     }
 
     // ========================================================
-    // 🔥 All Adapters
+    // 🔥 Modern Models & Adapters
     // ========================================================
-    
-    // Modern Month Grid Adapter for "Who Not Submitted"
+    data class ModernRankingEntry(
+        val rank: Int,
+        val employeeId: String,
+        val employeeName: String,
+        val branch: String,
+        val zone: String,
+        val score: Int
+    )
+
+    data class ModernCategoryEntry(
+        val name: String,
+        val officersCount: Int,
+        val totalCards: Int,
+        val branches: String,
+        val iconRes: Int
+    )
+
+    data class ModernOfficerEntry(
+        val employeeId: String,
+        val name: String,
+        val branch: String,
+        val zone: String,
+        val manager: String,
+        val totalCards: Int
+    )
+
+    inner class FullscreenRankingAdapter(
+        private var list: List<ModernRankingEntry>,
+        private val onItemClick: (ModernRankingEntry) -> Unit
+    ) : RecyclerView.Adapter<FullscreenRankingAdapter.VH>() {
+
+        inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+            val card: MaterialCardView = view.findViewById(R.id.cardRankItem)
+            val layoutBadge: FrameLayout = view.findViewById(R.id.layoutRankBadge)
+            val tvNumber: TextView = view.findViewById(R.id.tvRankItemNumber)
+            val tvName: TextView = view.findViewById(R.id.tvRankItemName)
+            val tvBranch: TextView = view.findViewById(R.id.tvRankItemBranch)
+            val tvZone: TextView = view.findViewById(R.id.tvRankItemZone)
+            val tvScore: TextView = view.findViewById(R.id.tvRankItemScore)
+            val tvStatus: TextView = view.findViewById(R.id.tvRankItemStatus)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_ranking_modern, parent, false)
+            return VH(view)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val item = list[position]
+            holder.tvNumber.text = item.rank.toString()
+            holder.tvName.text = item.employeeName
+            holder.tvBranch.text = if (item.branch.isNotBlank()) "Branch: ${item.branch}" else "ID: ${item.employeeId}"
+            
+            if (item.zone.isNotBlank()) {
+                holder.tvZone.visibility = View.VISIBLE
+                holder.tvZone.text = item.zone
+            } else {
+                holder.tvZone.visibility = View.GONE
+            }
+
+            val cardText = if (item.score == 1) "1 card" else "${item.score} cards"
+            holder.tvScore.text = cardText
+
+            // Styling based on Rank position
+            when (item.rank) {
+                1 -> {
+                    holder.card.strokeColor = Color.parseColor("#FDE68A")
+                    holder.card.strokeWidth = 3
+                    holder.layoutBadge.setBackgroundResource(R.drawable.bg_badge_amber)
+                    holder.tvNumber.setTextColor(Color.parseColor("#92400E"))
+                    holder.tvStatus.visibility = View.VISIBLE
+                    holder.tvStatus.text = "👑 Champion (#1)"
+                    holder.tvStatus.setTextColor(Color.parseColor("#B45309"))
+                }
+                2 -> {
+                    holder.card.strokeColor = Color.parseColor("#CBD5E1")
+                    holder.card.strokeWidth = 2
+                    holder.layoutBadge.setBackgroundResource(R.drawable.bg_badge_grey)
+                    holder.tvNumber.setTextColor(Color.parseColor("#334155"))
+                    holder.tvStatus.visibility = View.VISIBLE
+                    holder.tvStatus.text = "🥈 Runner Up (#2)"
+                    holder.tvStatus.setTextColor(Color.parseColor("#475569"))
+                }
+                3 -> {
+                    holder.card.strokeColor = Color.parseColor("#FED7AA")
+                    holder.card.strokeWidth = 2
+                    holder.layoutBadge.setBackgroundResource(R.drawable.bg_badge_amber)
+                    holder.tvNumber.setTextColor(Color.parseColor("#C2410C"))
+                    holder.tvStatus.visibility = View.VISIBLE
+                    holder.tvStatus.text = "🥉 3rd Place (#3)"
+                    holder.tvStatus.setTextColor(Color.parseColor("#C2410C"))
+                }
+                else -> {
+                    holder.card.strokeColor = Color.parseColor("#E2E8F0")
+                    holder.card.strokeWidth = 1
+                    holder.layoutBadge.setBackgroundResource(R.drawable.bg_badge_blue)
+                    holder.tvNumber.setTextColor(Color.parseColor("#1E40AF"))
+                    holder.tvStatus.visibility = View.GONE
+                }
+            }
+
+            holder.itemView.setOnClickListener { onItemClick(item) }
+        }
+
+        override fun getItemCount() = list.size
+
+        fun updateList(newList: List<ModernRankingEntry>) {
+            list = newList
+            notifyDataSetChanged()
+        }
+    }
+
+    inner class FullscreenCategoryAdapter(
+        private var list: List<ModernCategoryEntry>,
+        private val onItemClick: (ModernCategoryEntry) -> Unit
+    ) : RecyclerView.Adapter<FullscreenCategoryAdapter.VH>() {
+
+        inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+            val ivIcon: ImageView = view.findViewById(R.id.ivCategoryIcon)
+            val tvTitle: TextView = view.findViewById(R.id.tvCategoryTitle)
+            val tvSubtitle: TextView = view.findViewById(R.id.tvCategorySubtitle)
+            val tvBadge: TextView = view.findViewById(R.id.tvCategoryCountBadge)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_category_modern, parent, false)
+            return VH(view)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val item = list[position]
+            holder.tvTitle.text = item.name
+            holder.tvSubtitle.text = item.branches
+            holder.ivIcon.setImageResource(item.iconRes)
+            
+            if (item.officersCount > 0) {
+                holder.tvBadge.visibility = View.VISIBLE
+                holder.tvBadge.text = "${item.officersCount} Officers"
+            } else {
+                holder.tvBadge.visibility = View.GONE
+            }
+
+            holder.itemView.setOnClickListener { onItemClick(item) }
+        }
+
+        override fun getItemCount() = list.size
+
+        fun updateList(newList: List<ModernCategoryEntry>) {
+            list = newList
+            notifyDataSetChanged()
+        }
+    }
+
+    inner class FullscreenOfficerAdapter(
+        private var list: List<ModernOfficerEntry>,
+        private val onItemClick: (ModernOfficerEntry) -> Unit
+    ) : RecyclerView.Adapter<FullscreenOfficerAdapter.VH>() {
+
+        inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+            val tvInitial: TextView = view.findViewById(R.id.tvOfficerAvatarInitial)
+            val tvName: TextView = view.findViewById(R.id.tvOfficerName)
+            val tvEmpId: TextView = view.findViewById(R.id.tvOfficerEmpIdBadge)
+            val tvBranch: TextView = view.findViewById(R.id.tvOfficerBranch)
+            val tvCards: TextView = view.findViewById(R.id.tvOfficerCardsBadge)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_officer_filter_modern, parent, false)
+            return VH(view)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val item = list[position]
+            val initial = item.name.trim().take(1).uppercase()
+            holder.tvInitial.text = if (initial.isNotEmpty()) initial else "O"
+            holder.tvName.text = item.name
+            holder.tvEmpId.text = "ID: ${item.employeeId}"
+            holder.tvBranch.text = if (item.branch.isNotBlank()) "Branch: ${item.branch}" else "Zone: ${item.zone}"
+            
+            val cardText = if (item.totalCards == 1) "1 Card" else "${item.totalCards} Cards"
+            holder.tvCards.text = cardText
+
+            holder.itemView.setOnClickListener { onItemClick(item) }
+        }
+
+        override fun getItemCount() = list.size
+
+        fun updateList(newList: List<ModernOfficerEntry>) {
+            list = newList
+            notifyDataSetChanged()
+        }
+    }
+
     inner class ModernMonthGridAdapter(private val months: List<String>, private val onItemClick: (String) -> Unit) : RecyclerView.Adapter<ModernMonthGridAdapter.VH>() {
         inner class VH(val card: MaterialCardView, val tvName: TextView) : RecyclerView.ViewHolder(card) {
             init { card.setOnClickListener { onItemClick(months[adapterPosition]) } }
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val card = MaterialCardView(parent.context).apply {
-                layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { setMargins(12, 12, 12, 12) }
-                radius = 24f
-                setCardBackgroundColor(Color.parseColor("#EAF4FF")) // Light Blue
-                cardElevation = 0f 
+                layoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { setMargins(8, 8, 8, 8) }
+                radius = 16f
+                setCardBackgroundColor(Color.parseColor("#E3F2FD"))
+                cardElevation = 2f
             }
             val tv = TextView(parent.context).apply {
                 layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                setPadding(8, 32, 8, 32)
+                setPadding(8, 24, 8, 24)
                 gravity = Gravity.CENTER
-                textSize = 16f
-                setTextColor(Color.parseColor("#1C3A70")) // Dark Blue
+                textSize = 13f
+                setTextColor(Color.parseColor("#1A237E"))
                 setTypeface(null, Typeface.BOLD)
             }
             card.addView(tv)
             return VH(card, tv)
         }
         override fun onBindViewHolder(holder: VH, position: Int) { 
-            holder.tvName.text = months[position] 
+            holder.tvName.text = months[position]
         }
         override fun getItemCount() = months.size
-    }
-
-    inner class CategoryAdapter(private var list: List<String>, private val onItemClick: (String) -> Unit) : RecyclerView.Adapter<CategoryAdapter.VH>() {
-        inner class VH(view: View) : RecyclerView.ViewHolder(view) { val tvName: TextView = view.findViewById(R.id.tvEmpName); val tvBranch: TextView = view.findViewById(R.id.tvEmpBranch) }
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH { return VH(LayoutInflater.from(parent.context).inflate(R.layout.item_employee_search, parent, false)) }
-        override fun onBindViewHolder(holder: VH, position: Int) { holder.tvName.text = list[position]; holder.tvBranch.visibility = View.GONE; holder.itemView.setOnClickListener { onItemClick(list[position]) } }
-        override fun getItemCount() = list.size
-        fun updateList(newList: List<String>) { list = newList; notifyDataSetChanged() }
-    }
-
-    inner class EmployeeSearchAdapter(private var empList: List<Performance>, private val onItemClick: (Performance) -> Unit) : RecyclerView.Adapter<EmployeeSearchAdapter.VH>() {
-        inner class VH(view: View) : RecyclerView.ViewHolder(view) { val tvName: TextView = view.findViewById(R.id.tvEmpName); val tvBranch: TextView = view.findViewById(R.id.tvEmpBranch) }
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH { return VH(LayoutInflater.from(parent.context).inflate(R.layout.item_employee_search, parent, false)) }
-        override fun onBindViewHolder(holder: VH, position: Int) { holder.tvName.text = empList[position].employeeName; holder.tvBranch.text = "Branch: ${empList[position].branch}"; holder.tvBranch.visibility = View.VISIBLE; holder.itemView.setOnClickListener { onItemClick(empList[position]) } }
-        override fun getItemCount() = empList.size
-        fun updateList(newList: List<Performance>) { empList = newList; notifyDataSetChanged() }
-    }
-
-    inner class RankingAdapter(private val rankList: List<Pair<String, Int>>) : RecyclerView.Adapter<RankingAdapter.VH>() {
-        inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-            val cardBadge: MaterialCardView = view.findViewById(R.id.cardRankBadge)
-            val tvNumber: TextView = view.findViewById(R.id.tvRankNumber)
-            val tvName: TextView = view.findViewById(R.id.tvRankName)
-            val tvScore: TextView = view.findViewById(R.id.tvRankScore)
-        }
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-            return VH(LayoutInflater.from(parent.context).inflate(R.layout.item_ranking, parent, false))
-        }
-        override fun onBindViewHolder(holder: VH, position: Int) {
-            val rankData = rankList[position]
-            val rankPosition = position + 1 
-            holder.tvNumber.text = rankPosition.toString()
-            holder.tvName.text = rankData.first
-            when (rankPosition) {
-                1 -> { holder.cardBadge.setCardBackgroundColor(Color.parseColor("#FFD700")); holder.tvNumber.setTextColor(Color.WHITE); holder.tvName.setTextColor(Color.parseColor("#D4AF37")) }
-                2 -> { holder.cardBadge.setCardBackgroundColor(Color.parseColor("#C0C0C0")); holder.tvNumber.setTextColor(Color.WHITE); holder.tvName.setTextColor(Color.parseColor("#757575")) }
-                3 -> { holder.cardBadge.setCardBackgroundColor(Color.parseColor("#CD7F32")); holder.tvNumber.setTextColor(Color.WHITE); holder.tvName.setTextColor(Color.parseColor("#8D6E63")) }
-                else -> { holder.cardBadge.setCardBackgroundColor(Color.parseColor("#F5F5F5")); holder.tvNumber.setTextColor(Color.parseColor("#333333")); holder.tvName.setTextColor(Color.parseColor("#212121")) }
-            }
-            val count = rankData.second
-            if (count == 0) {
-                holder.tvScore.text = "0 card"
-                holder.tvScore.setTextColor(Color.RED)
-            } else {
-                val cardText = if(count == 1) "1 card" else "$count cards"
-                holder.tvScore.text = cardText
-                holder.tvScore.setTextColor(Color.parseColor("#E91E63")) 
-            }
-        }
-        override fun getItemCount() = rankList.size
     }
 
     inner class MonthGridAdapter(private val months: List<String>, private val onItemClick: (String) -> Unit) : RecyclerView.Adapter<MonthGridAdapter.VH>() {
@@ -872,10 +1469,18 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     private fun updateTeamTargetOverview() {
         db.collection("employees")
-            .whereEqualTo("status", "Approved")
             .get()
             .addOnSuccessListener { snapshot ->
-                val employees = snapshot.toObjects(User::class.java)
+                val employees = snapshot.documents.mapNotNull { doc ->
+                    val u = doc.toObject(User::class.java)
+                    if (u != null) {
+                        val effective = if (u.employeeId.isBlank()) u.copy(employeeId = doc.id) else u
+                        val isApproved = effective.status.isBlank() ||
+                                         effective.status.equals("Approved", ignoreCase = true) ||
+                                         effective.status.equals("APPROVED", ignoreCase = true)
+                        if (isApproved && effective.isTargetEligible) effective else null
+                    } else null
+                }
                 val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
                 val totalTarget = employees.sumOf { it.monthlyTarget }
                 val achievedInMonth = allReports.count { 
@@ -966,6 +1571,8 @@ class AdminDashboardActivity : AppCompatActivity() {
                 val target = officer.monthlyTarget
                 val achieved = TargetUtils.countCards(allReports, officer.employeeId, filterMonth)
                 val rate = TargetUtils.calculateAchievementRate(achieved, target)
+                val yearlyTarget = if (officer.yearlyTarget > 0) officer.yearlyTarget else (target * 12)
+                val yearlyAchieved = TargetUtils.countCards(allReports, officer.employeeId, null)
 
                 if (target > 0) {
                     totalTargetSum += target
@@ -973,7 +1580,7 @@ class AdminDashboardActivity : AppCompatActivity() {
                 }
                 totalAchievedSum += achieved
 
-                TargetOfficerItem(officer, target, achieved, rate)
+                TargetOfficerItem(officer, target, achieved, rate, yearlyTarget, yearlyAchieved)
             }
 
             targetOfficerAdapter.updateList(items)
@@ -1027,10 +1634,18 @@ class AdminDashboardActivity : AppCompatActivity() {
         onLoaded: (List<User>) -> Unit
     ) {
         db.collection("employees")
-            .whereEqualTo("status", "Approved")
             .get()
             .addOnSuccessListener { snapshot ->
-                val officers = snapshot.toObjects(User::class.java).sortedBy { it.name }
+                val officers = snapshot.documents.mapNotNull { doc ->
+                    val u = doc.toObject(User::class.java)
+                    if (u != null) {
+                        val effective = if (u.employeeId.isBlank()) u.copy(employeeId = doc.id) else u
+                        val isApproved = effective.status.isBlank() ||
+                                         effective.status.equals("Approved", ignoreCase = true) ||
+                                         effective.status.equals("APPROVED", ignoreCase = true)
+                        if (isApproved && effective.isTargetEligible) effective else null
+                    } else null
+                }.sortedBy { it.name }
                 onLoaded(officers)
             }
             .addOnFailureListener {
@@ -1047,7 +1662,7 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         targetBinding.tvSetTargetEmployee.text = "${user.name} (ID: ${user.employeeId})"
 
-        val periodOptions = listOf("Monthly Target (All Months)") + monthsList
+        val periodOptions = listOf("General Target (Monthly & Yearly)") + monthsList
         val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, periodOptions)
         targetBinding.spinnerTargetMonth.adapter = spinnerAdapter
 
@@ -1060,29 +1675,53 @@ class AdminDashboardActivity : AppCompatActivity() {
             targetBinding.etTargetCards.setText(user.monthlyTarget.toString())
         }
 
+        val initialYearly = if (user.yearlyTarget > 0) user.yearlyTarget else (user.monthlyTarget * 12)
+        if (initialYearly > 0) {
+            targetBinding.etYearlyTargetCards.setText(initialYearly.toString())
+        }
+
+        // Auto-calculate yearly target when typing monthly target if yearly is empty or default
+        targetBinding.etTargetCards.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val mVal = s.toString().trim().toIntOrNull()
+                if (mVal != null && mVal >= 0) {
+                    val yText = targetBinding.etYearlyTargetCards.text.toString().trim()
+                    if (yText.isEmpty() || yText == "0" || yText.toIntOrNull() == (user.monthlyTarget * 12)) {
+                        targetBinding.etYearlyTargetCards.setText((mVal * 12).toString())
+                    }
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         targetBinding.btnCancelTarget.setOnClickListener { dialog.dismiss() }
 
         targetBinding.btnSaveTarget.setOnClickListener {
-            val targetStr = targetBinding.etTargetCards.text.toString().trim()
-            val targetVal = targetStr.toIntOrNull()
-            if (targetVal == null || targetVal < 0) {
-                targetBinding.tilTargetCards.error = "Please enter a valid target count"
+            val monthlyStr = targetBinding.etTargetCards.text.toString().trim()
+            val monthlyVal = monthlyStr.toIntOrNull()
+            if (monthlyVal == null || monthlyVal < 0) {
+                targetBinding.tilTargetCards.error = "Please enter a valid monthly target"
                 return@setOnClickListener
             }
-
             targetBinding.tilTargetCards.error = null
+
+            val yearlyStr = targetBinding.etYearlyTargetCards.text.toString().trim()
+            val yearlyVal = yearlyStr.toIntOrNull() ?: (monthlyVal * 12)
+
             val selectedPeriod = periodOptions[targetBinding.spinnerTargetMonth.selectedItemPosition]
-            val monthToSave = if (selectedPeriod.startsWith("Monthly Target")) "General" else selectedPeriod
+            val monthToSave = if (selectedPeriod.startsWith("General")) "General" else selectedPeriod
 
             targetBinding.btnSaveTarget.isEnabled = false
             TargetUtils.saveTarget(
                 employeeId = user.employeeId,
                 employeeName = user.name,
                 month = monthToSave,
-                targetCards = targetVal,
+                targetCards = monthlyVal,
+                yearlyTargetCards = yearlyVal,
                 adminName = userName.ifBlank { "Admin" },
                 onSuccess = {
-                    Toast.makeText(this, "Target set to $targetVal cards for ${user.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Target set: Monthly $monthlyVal cards, Yearly $yearlyVal cards for ${user.name}", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                     updateTeamTargetOverview()
                     onSaved?.invoke()
@@ -1125,6 +1764,19 @@ class AdminDashboardActivity : AppCompatActivity() {
         detailsBinding.progressDetailCurrent.progress = currentRate.toInt().coerceIn(0, 100)
         detailsBinding.progressDetailCurrent.setIndicatorColor(currentColor)
 
+        // Annual / Yearly Target progress
+        val yearlyTarget = if (user.yearlyTarget > 0) user.yearlyTarget else (target * 12)
+        val yearlyAchieved = TargetUtils.countCards(allReports, user.employeeId, null)
+        val yearlyRate = TargetUtils.calculateAchievementRate(yearlyAchieved, yearlyTarget)
+
+        detailsBinding.tvDetailYearlyTargetCount.text = "Yearly Target: $yearlyTarget Cards"
+        detailsBinding.tvDetailYearlyAchievedCount.text = "Total Achieved: $yearlyAchieved Cards"
+        detailsBinding.tvDetailYearlyAchievementPercent.text = TargetUtils.formatAchievementRate(yearlyAchieved, yearlyTarget)
+        val yearlyColor = TargetUtils.getAchievementColor(yearlyAchieved, yearlyTarget)
+        detailsBinding.tvDetailYearlyAchievementPercent.setTextColor(yearlyColor)
+        detailsBinding.progressDetailYearly.progress = yearlyRate.toInt().coerceIn(0, 100)
+        detailsBinding.progressDetailYearly.setIndicatorColor(yearlyColor)
+
         val monthlyItems = monthsList.map { m ->
             val ach = TargetUtils.countCards(allReports, user.employeeId, m)
             val r = TargetUtils.calculateAchievementRate(ach, target)
@@ -1136,5 +1788,41 @@ class AdminDashboardActivity : AppCompatActivity() {
         detailsBinding.recyclerUserTargetMonths.adapter = monthAdapter
 
         dialog.show()
+    }
+
+    private fun setupExitNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                showExitDialog()
+            }
+        })
+    }
+
+    private fun showExitDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Exit App")
+            .setMessage("Are you sure you want to exit?")
+            .setIcon(R.drawable.ic_logout)
+            .setPositiveButton("Yes") { _, _ ->
+                finishAffinity()
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
+    private fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                androidx.core.app.ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    1001
+                )
+            }
+        }
     }
 }

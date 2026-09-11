@@ -114,28 +114,74 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/cbRememberMe"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:checked="true"
-                android:text="Remember ID &amp; Password"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                app:buttonTint="@color/primary" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
 
-            <com.google.android.material.button.MaterialButton
-                 android:layout_height="52dp"
-                 android:layout_width="match_parent"
-                 app:cornerRadius="14dp"
-                 app:elevation="0dp"
-                 app:backgroundTint="@color/primary"
-                 android:textColor="#FFFFFF"
-                 android:layout_marginTop="24dp"
-                 android:id="@+id/btnLogin"
-                 android:text="LOGIN"
-                 android:textStyle="bold" />
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbRememberMe"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:checked="true"
+                    android:text="Remember Me"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    app:buttonTint="@color/primary" />
+
+                <TextView
+                    android:id="@+id/tvForgotPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="6dp"
+                    android:text="Forgot Password?"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="?attr/selectableItemBackground" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="20dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogin"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    app:cornerRadius="14dp"
+                    app:elevation="0dp"
+                    app:backgroundTint="@color/primary"
+                    android:textColor="#FFFFFF"
+                    android:text="LOGIN"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBiometricLogin"
+                    android:layout_width="54dp"
+                    android:layout_height="52dp"
+                    android:layout_marginStart="10dp"
+                    app:cornerRadius="14dp"
+                    app:elevation="0dp"
+                    app:icon="@drawable/ic_fingerprint"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="#1E40AF"
+                    app:strokeColor="#CBD5E1"
+                    app:strokeWidth="1.5dp"
+                    android:backgroundTint="#F8FAFC"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:contentDescription="Biometric Fingerprint Login" />
+
+            </LinearLayout>
 
             <LinearLayout
                  android:layout_height="wrap_content"

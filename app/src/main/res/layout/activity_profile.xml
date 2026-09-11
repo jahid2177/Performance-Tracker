@@ -186,11 +186,83 @@
                     android:padding="20dp">
 
                     <TextView style="@style/ProfileLabel" android:text="Mobile Number" />
-                    <TextView android:id="@+id/tvProfileMobile" style="@style/ProfileValue" android:text="01915519710" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="4dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvProfileMobile"
+                            style="@style/ProfileValue"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginBottom="0dp"
+                            android:text="01915519710" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCopyMobile"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="0dp"
+                            android:text="Copy"
+                            android:textSize="12sp"
+                            android:textColor="#2563EB"
+                            app:icon="@drawable/ic_content_copy"
+                            app:iconSize="14dp"
+                            app:iconTint="#2563EB"
+                            app:cornerRadius="8dp"
+                            app:backgroundTint="#EFF6FF" />
+                    </LinearLayout>
+                    <View style="@style/Divider" />
+
+                    <TextView style="@style/ProfileLabel" android:text="Email Address (Password Recovery)" />
+                    <TextView android:id="@+id/tvProfileEmail" style="@style/ProfileValue" android:text="Not set" />
                     <View style="@style/Divider" />
 
                     <TextView style="@style/ProfileLabel" android:text="Official Number" />
-                    <TextView android:id="@+id/tvProfileOfficialNumber" style="@style/ProfileValue" android:text="N/A" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="4dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvProfileOfficialNumber"
+                            style="@style/ProfileValue"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginBottom="0dp"
+                            android:text="N/A" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCopyOfficialNumber"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="0dp"
+                            android:text="Copy"
+                            android:textSize="12sp"
+                            android:textColor="#2563EB"
+                            app:icon="@drawable/ic_content_copy"
+                            app:iconSize="14dp"
+                            app:iconTint="#2563EB"
+                            app:cornerRadius="8dp"
+                            app:backgroundTint="#EFF6FF" />
+                    </LinearLayout>
                     <View style="@style/Divider" />
 
                     <TextView style="@style/ProfileLabel" android:text="Branch" />
@@ -199,10 +271,26 @@
 
                     <TextView style="@style/ProfileLabel" android:text="Zone" />
                     <TextView android:id="@+id/tvProfileZone" style="@style/ProfileValue" android:text="Sylhet" />
-                    <View style="@style/Divider" />
 
-                    <TextView style="@style/ProfileLabel" android:text="Sales Manager" />
-                    <TextView android:id="@+id/tvProfileManager" style="@style/ProfileValue" android:text="Asma Akter" />
+                    <!-- Sales Manager Section (Hidden for ADMIN, AGM, DGM, Sales Manager) -->
+                    <LinearLayout
+                        android:id="@+id/layoutProfileManagerGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <View style="@style/Divider" />
+
+                        <TextView
+                            android:id="@+id/tvProfileManagerLabel"
+                            style="@style/ProfileLabel"
+                            android:text="Sales Manager" />
+
+                        <TextView
+                            android:id="@+id/tvProfileManager"
+                            style="@style/ProfileValue"
+                            android:text="Asma Akter" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -324,7 +412,7 @@
                     <!-- Admin action: Set / Edit Target button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnProfileSetTarget"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                         android:layout_width="match_parent"
                         android:layout_height="44dp"
                         android:layout_marginTop="14dp"

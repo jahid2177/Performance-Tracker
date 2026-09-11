@@ -8,6 +8,7 @@ data class EmployeeTarget(
     val employeeName: String = "",
     val month: String = "",
     val targetCards: Int = 0,
+    val yearlyTargetCards: Int = 0,
     val year: Int = 2026,
     val updatedBy: String = "",
     val updatedAt: Long = 0L

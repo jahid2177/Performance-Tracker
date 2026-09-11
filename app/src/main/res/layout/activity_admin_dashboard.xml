@@ -27,27 +27,42 @@
              android:text="Control Panel"
              android:textStyle="bold" />
 
-        <com.google.android.material.card.MaterialCardView
-             android:layout_height="40dp"
-             android:layout_width="40dp"
-             app:cardCornerRadius="20dp"
-             app:cardElevation="0dp"
-             app:strokeWidth="1dp"
-             app:strokeColor="@color/card_stroke"
-             app:cardBackgroundColor="@color/surface"
-             android:clickable="true"
-             android:focusable="true"
-             android:id="@+id/btnAdminSettings">
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
-            <ImageView
-                 android:layout_height="22dp"
-                 android:layout_width="22dp"
-                 android:layout_gravity="center"
-                 android:src="@drawable/ic_settings"
-                 app:tint="@color/text_primary"
-                 android:id="@+id/ivAdminSettingsIcon" />
+            <com.google.android.material.card.MaterialCardView
+                 android:layout_height="40dp"
+                 android:layout_width="40dp"
+                 app:cardCornerRadius="20dp"
+                 app:cardElevation="0dp"
+                 app:strokeWidth="1dp"
+                 app:strokeColor="@color/card_stroke"
+                 app:cardBackgroundColor="@color/surface"
+                 android:clickable="true"
+                 android:focusable="true"
+                 android:id="@+id/btnAdminSettings">
 
-        </com.google.android.material.card.MaterialCardView>
+                <ImageView
+                     android:layout_height="22dp"
+                     android:layout_width="22dp"
+                     android:layout_gravity="center"
+                     android:src="@drawable/ic_settings"
+                     app:tint="@color/text_primary"
+                     android:id="@+id/ivAdminSettingsIcon" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <View
+                android:id="@+id/viewAdminSettingsRedDot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="2dp"
+                android:background="@drawable/bg_badge_red_dot"
+                android:visibility="gone" />
+        </FrameLayout>
 
     </LinearLayout>
 
@@ -139,7 +154,7 @@
                          android:layout_marginStart="6dp"
                          android:layout_weight="1"
                          android:id="@+id/btnExportCsv"
-                         android:text="Export Excel / CSV"
+                         android:text="Export Excel"
                          android:textStyle="bold" />
 
                 </LinearLayout>

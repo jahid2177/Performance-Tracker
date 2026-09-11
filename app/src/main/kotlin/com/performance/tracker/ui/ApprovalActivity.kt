@@ -3,6 +3,7 @@ package com.performance.tracker.ui
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.firestore.FirebaseFirestore
@@ -28,9 +29,11 @@ class ApprovalActivity : AppCompatActivity() {
             isApprovalMode = true,
             onCardClick = null, 
             onActionClick = { user, action ->
-                // 🔥 স্ট্যাটাস কে "Approved" (ক্যাপিটালাইজড বা আপনার মডেলে যেমন আছে) হিসেবে আপডেট করবে
-                if (action == "APPROVE") updateUserStatus(user.employeeId, "Approved")
-                else if (action == "DELETE") deleteUser(user.employeeId)
+                if (action == "APPROVE") {
+                    updateUserStatus(user.employeeId, "Approved")
+                } else if (action == "DELETE") {
+                    confirmDeletePendingUser(user)
+                }
             }
         )
         
@@ -76,6 +79,18 @@ class ApprovalActivity : AppCompatActivity() {
             .addOnFailureListener { exception ->
                 Toast.makeText(this, "Failed to approve: ${exception.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun confirmDeletePendingUser(user: User) {
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ Warning: Reject & Delete")
+            .setMessage("Are you sure you want to reject and permanently delete the registration request for ${user.name} (ID: ${user.employeeId})?\n\nThis action cannot be undone.")
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton("Yes, Delete") { _, _ ->
+                deleteUser(user.employeeId)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun deleteUser(id: String) {

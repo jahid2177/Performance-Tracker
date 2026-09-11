@@ -78,35 +78,6 @@
         <com.google.android.material.textfield.TextInputLayout
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
-             android:layout_marginBottom="16dp"
-             android:hint="Select Role"
-             app:boxBackgroundMode="outline"
-             app:boxBackgroundColor="@color/input_background"
-             app:boxStrokeColor="@color/box_stroke_selector"
-             app:boxStrokeWidth="1.5dp"
-             app:boxStrokeWidthFocused="2dp"
-             app:hintTextColor="@color/primary"
-             android:textColorHint="@color/text_secondary"
-             app:boxCornerRadiusBottomEnd="12dp"
-             app:boxCornerRadiusBottomStart="12dp"
-             app:boxCornerRadiusTopEnd="12dp"
-             app:boxCornerRadiusTopStart="12dp"
-             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-
-            <AutoCompleteTextView
-                 android:layout_height="wrap_content"
-                 android:layout_width="match_parent"
-                 android:textColor="@color/text_primary"
-                 android:paddingVertical="14dp"
-                 android:inputType="none"
-                 android:id="@+id/autoCompleteRole"
-                 android:textStyle="bold" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-             android:layout_height="wrap_content"
-             android:layout_width="match_parent"
              android:layout_marginBottom="12dp"
              android:hint="Employee ID (12 digits)"
              app:boxBackgroundMode="outline"
@@ -189,6 +160,35 @@
                  android:textColor="@color/text_primary"
                  android:textColorHint="@color/text_secondary"
                  android:id="@+id/etMobile" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+             android:layout_height="wrap_content"
+             android:layout_width="match_parent"
+             android:layout_marginBottom="12dp"
+             android:hint="Email Address (Required for Password Recovery)"
+             app:boxBackgroundMode="outline"
+             app:boxBackgroundColor="@color/input_background"
+             app:boxStrokeColor="@color/box_stroke_selector"
+             app:boxStrokeWidth="1.5dp"
+             app:boxStrokeWidthFocused="2dp"
+             app:hintTextColor="@color/primary"
+             android:textColorHint="@color/text_secondary"
+             app:boxCornerRadiusBottomEnd="12dp"
+             app:boxCornerRadiusBottomStart="12dp"
+             app:boxCornerRadiusTopEnd="12dp"
+             app:boxCornerRadiusTopStart="12dp"
+             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:inputType="textEmailAddress"
+                 android:paddingVertical="14dp"
+                 android:textColor="@color/text_primary"
+                 android:textColorHint="@color/text_secondary"
+                 android:id="@+id/etRegEmail" />
 
         </com.google.android.material.textfield.TextInputLayout>
 

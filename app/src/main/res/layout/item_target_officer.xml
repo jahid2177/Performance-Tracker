@@ -71,7 +71,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnItemSetTarget"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="38dp"
                 app:cornerRadius="10dp"
@@ -98,6 +98,20 @@
                 android:textSize="13sp"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvTargetThresholdAlert"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_badge_red"
+                android:textColor="@color/badge_red_icon"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="3dp"
+                android:text="⚠️ &lt;50% Alert"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvTargetPercentBadge"
