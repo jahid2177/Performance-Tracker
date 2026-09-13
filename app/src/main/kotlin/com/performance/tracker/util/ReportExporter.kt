@@ -26,6 +26,7 @@ import android.graphics.pdf.PdfDocument
 import com.performance.tracker.R
 import com.performance.tracker.model.Performance
 import com.performance.tracker.model.ReportSummary
+import com.performance.tracker.model.User
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -37,10 +38,38 @@ object ReportExporter {
 
     private const val CHANNEL_ID = "performance_reports"
 
-    private data class PdfCol(val title: String, val width: Float, val isCenter: Boolean)
+    private data class PdfCol(val key: String, val title: String, val width: Float, val isCenter: Boolean) {
+        constructor(title: String, width: Float, isCenter: Boolean) : this("", title, width, isCenter)
+    }
+
+    data class OfficerSummary(
+        val employeeId: String,
+        val employeeName: String,
+        val branch: String,
+        val zone: String,
+        val salesManager: String,
+        val total: Int,
+        val target: Int,
+        val yearlyTarget: Int = 0,
+        val short: Int,
+        val achievementRate: Double,
+        val achievementStr: String
+    )
+
+    data class SalesManagerSummary(
+        val managerName: String,
+        val zone: String,
+        val officerCount: Int,
+        val total: Int,
+        val target: Int,
+        val short: Int,
+        val achievementRate: Double,
+        val achievementStr: String
+    )
 
     // ========================================================
-    // 1. NATIVE ANDROID PDF: Monthly Performance Report (Download / Share)
+    // 1. NATIVE ANDROID PDF: Performance & Target Achievement Report (Download / Share)
+    // Supports Officer Performance and Sales Manager Performance with dynamic Zone & Sales Manager toggles
     // ========================================================
     fun generateMonthlyPdf(
         context: Context,
@@ -48,7 +77,15 @@ object ReportExporter {
         monthRange: String,
         managerName: String,
         isSummary: Boolean,
-        isShare: Boolean
+        isShare: Boolean,
+        officerMonthlyTargets: Map<String, Int> = emptyMap(),
+        officerYearlyTargets: Map<String, Int> = emptyMap(),
+        monthCount: Int = 1,
+        includeDetails: Boolean = false,
+        includeZone: Boolean = true,
+        includeSalesManager: Boolean = false,
+        isSalesManagerReport: Boolean = false,
+        allEmployees: List<User> = emptyList()
     ) {
         if (data.isEmpty()) {
             Toast.makeText(context, "No performance data found for the selected period", Toast.LENGTH_SHORT).show()
@@ -57,20 +94,20 @@ object ReportExporter {
 
         try {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val fileName = "Monthly_Performance_Report_$timestamp.pdf"
+            val fileName = "Performance_Report_$timestamp.pdf"
             val mimeType = "application/pdf"
 
-            // Always write first to cache directory to ensure guaranteed success without permission failure
+            // Cache directory destination
             val reportsDir = File(context.cacheDir, "reports").apply { if (!exists()) mkdirs() }
             val targetFile = File(reportsDir, fileName)
             val outputStream = FileOutputStream(targetFile)
 
-            // PDF Dimensions (Standard A4 @ 72 DPI)
+            // Standard A4 dimensions
             val pageWidth = 595
             val pageHeight = 842
-            val marginLeft = 36f
-            val marginRight = 559f
-            val contentWidth = marginRight - marginLeft // 523f
+            val marginLeft = 20f
+            val marginRight = 575f
+            val contentWidth = marginRight - marginLeft // 555f
 
             val pdfDocument = PdfDocument()
             var pageNum = 1
@@ -81,59 +118,66 @@ object ReportExporter {
             // Paints
             val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#0F172A")
-                textSize = 15f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textAlign = Paint.Align.CENTER
-            }
-            val subTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#1E40AF")
-                textSize = 10.5f
+                textSize = 12f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textAlign = Paint.Align.CENTER
             }
             val metaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#64748B")
-                textSize = 8.5f
+                color = Color.parseColor("#475569")
+                textSize = 7.5f
                 textAlign = Paint.Align.CENTER
             }
-            val statsCardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#F1F5F9")
-                style = Paint.Style.FILL
-            }
-            val statsCardBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#CBD5E1")
-                style = Paint.Style.STROKE
-                strokeWidth = 1f
-            }
-            val statsTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#1E293B")
-                textSize = 9.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            }
             val headerBgPaint = Paint().apply {
-                color = Color.parseColor("#1E3A8A")
+                color = Color.WHITE
                 style = Paint.Style.FILL
             }
             val headerTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
+                color = Color.BLACK
                 textSize = 8.5f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             }
             val rowBgPaint = Paint().apply {
+                color = Color.WHITE
+                style = Paint.Style.FILL
+            }
+            val totalRowBgPaint = Paint().apply {
+                color = Color.parseColor("#F8FAFC")
                 style = Paint.Style.FILL
             }
             val dataTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#1E293B")
-                textSize = 8f
+                color = Color.BLACK
+                textSize = 8.0f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             }
             val dataBoldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#0F172A")
-                textSize = 8.5f
+                color = Color.BLACK
+                textSize = 8.2f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             }
-            val dividerPaint = Paint().apply {
-                color = Color.parseColor("#E2E8F0")
-                strokeWidth = 0.5f
+            val achievementGreenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#15803D") // Sharp green from reference image
+                textSize = 8.2f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            val achievementAmberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#D97706")
+                textSize = 8.2f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            val achievementRedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#DC2626")
+                textSize = 8.2f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            val gridPaint = Paint().apply {
+                color = Color.parseColor("#4B5563") // Crisp cell border
+                strokeWidth = 0.65f
+                style = Paint.Style.STROKE
+            }
+            val outerGridPaint = Paint().apply {
+                color = Color.parseColor("#1F2937")
+                strokeWidth = 1.0f
+                style = Paint.Style.STROKE
             }
             val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#94A3B8")
@@ -158,116 +202,532 @@ object ReportExporter {
                 return if (best.isNotEmpty()) best else text.take(1)
             }
 
-            fun drawFooter(c: Canvas, pNum: Int) {
-                c.drawLine(marginLeft, pageHeight - 32f, marginRight, pageHeight - 32f, dividerPaint)
-                c.drawText("Generated by Employee Performance Tracker", marginLeft, pageHeight - 18f, footerPaint)
-                val pText = "Page $pNum"
-                val pWidth = footerPaint.measureText(pText)
-                c.drawText(pText, marginRight - pWidth, pageHeight - 18f, footerPaint)
+            fun drawFitText(
+                c: Canvas,
+                text: String,
+                x: Float,
+                y: Float,
+                maxWidth: Float,
+                basePaint: Paint,
+                align: Paint.Align = Paint.Align.LEFT
+            ) {
+                val tempPaint = Paint(basePaint)
+                var currentSize = basePaint.textSize
+                tempPaint.textSize = currentSize
+                while (tempPaint.measureText(text) > maxWidth && currentSize > 6.2f) {
+                    currentSize -= 0.3f
+                    tempPaint.textSize = currentSize
+                }
+                val finalText = fitText(text, maxWidth, tempPaint)
+                tempPaint.textAlign = align
+                c.drawText(finalText, x, y, tempPaint)
             }
 
-            val summaryCols = listOf(
-                PdfCol("SL", 35f, true),
-                PdfCol("Month", 75f, false),
-                PdfCol("Officer Name", 175f, false),
-                PdfCol("Branch", 148f, false),
-                PdfCol("Total Cards", 90f, true)
-            )
+            fun drawFooter(c: Canvas, pNum: Int) {
+                c.drawLine(marginLeft, pageHeight - 24f, marginRight, pageHeight - 24f, gridPaint)
+                footerPaint.textAlign = Paint.Align.LEFT
+                c.drawText("Generated by Employee Performance Tracker", marginLeft, pageHeight - 12f, footerPaint)
+                footerPaint.textAlign = Paint.Align.RIGHT
+                c.drawText("Page $pNum", marginRight, pageHeight - 12f, footerPaint)
+            }
 
-            val detailCols = listOf(
-                PdfCol("SL", 28f, true),
-                PdfCol("Month", 58f, false),
-                PdfCol("Officer", 95f, false),
-                PdfCol("Branch", 85f, false),
-                PdfCol("Applicant Name", 110f, false),
-                PdfCol("A/C No", 92f, false),
-                PdfCol("Limit", 55f, true)
-            )
+            val colDefs = if (isSalesManagerReport) {
+                if (includeZone) {
+                    listOf(
+                        PdfCol("sl", "SL", 30f, true),
+                        PdfCol("manager", "Sales Manager", 155f, false),
+                        PdfCol("zone", "Zone", 70f, true),
+                        PdfCol("officers", "Officers", 55f, true),
+                        PdfCol("total", "Total", 55f, true),
+                        PdfCol("target", "Target", 55f, true),
+                        PdfCol("short", "SHORT", 50f, true),
+                        PdfCol("achievement", "Achievement", 85f, true)
+                    )
+                } else {
+                    listOf(
+                        PdfCol("sl", "SL", 30f, true),
+                        PdfCol("manager", "Sales Manager", 225f, false),
+                        PdfCol("officers", "Officers", 55f, true),
+                        PdfCol("total", "Total", 55f, true),
+                        PdfCol("target", "Target", 55f, true),
+                        PdfCol("short", "SHORT", 50f, true),
+                        PdfCol("achievement", "Achievement", 85f, true)
+                    )
+                }
+            } else {
+                when {
+                    includeZone && includeSalesManager -> listOf(
+                        PdfCol("branch", "Branch", 105f, false),
+                        PdfCol("official", "Branch Official", 105f, false),
+                        PdfCol("manager", "Sales Manager", 82f, false),
+                        PdfCol("zone", "Zone", 40f, true),
+                        PdfCol("total", "Total", 46f, true),
+                        PdfCol("target", "Target", 46f, true),
+                        PdfCol("short", "SHORT", 46f, true),
+                        PdfCol("achievement", "Achievement", 85f, true)
+                    )
+                    includeZone && !includeSalesManager -> listOf(
+                        PdfCol("branch", "Branch", 135f, false),
+                        PdfCol("official", "Branch Official", 145f, false),
+                        PdfCol("zone", "Zone", 48f, true),
+                        PdfCol("total", "Total", 46f, true),
+                        PdfCol("target", "Target", 46f, true),
+                        PdfCol("short", "SHORT", 46f, true),
+                        PdfCol("achievement", "Achievement", 89f, true)
+                    )
+                    !includeZone && includeSalesManager -> listOf(
+                        PdfCol("branch", "Branch", 120f, false),
+                        PdfCol("official", "Branch Official", 130f, false),
+                        PdfCol("manager", "Sales Manager", 115f, false),
+                        PdfCol("total", "Total", 48f, true),
+                        PdfCol("target", "Target", 48f, true),
+                        PdfCol("short", "SHORT", 46f, true),
+                        PdfCol("achievement", "Achievement", 88f, true)
+                    )
+                    else -> listOf(
+                        PdfCol("branch", "Branch", 165f, false),
+                        PdfCol("official", "Branch Official", 167f, false),
+                        PdfCol("total", "Total", 49f, true),
+                        PdfCol("target", "Target", 49f, true),
+                        PdfCol("short", "SHORT", 47f, true),
+                        PdfCol("achievement", "Achievement", 78f, true)
+                    )
+                }
+            }
 
-            val activeCols = if (isSummary) summaryCols else detailCols
-            val headerRowHeight = 24f
-            val dataRowHeight = 20f
+            val headerRowHeight = 22f
+            val dataRowHeight = 18.5f
 
             fun drawHeaderRow(c: Canvas, y: Float) {
                 c.drawRect(marginLeft, y, marginRight, y + headerRowHeight, headerBgPaint)
+                c.drawRect(marginLeft, y, marginRight, y + headerRowHeight, outerGridPaint)
+
                 var curX = marginLeft
-                for (col in activeCols) {
-                    val label = fitText(col.title, col.width - 4f, headerTextPaint)
+                for (col in colDefs) {
+                    // Header label
+                    val maxLabelW = col.width - 6f
                     val labelY = y + (headerRowHeight / 2f) - ((headerTextPaint.descent() + headerTextPaint.ascent()) / 2f)
                     val labelX = if (col.isCenter) {
-                        curX + (col.width - headerTextPaint.measureText(label)) / 2f
+                        curX + (col.width / 2f)
                     } else {
                         curX + 5f
                     }
-                    c.drawText(label, labelX, labelY, headerTextPaint)
+                    drawFitText(c, col.title, labelX, labelY, maxLabelW, headerTextPaint, if (col.isCenter) Paint.Align.CENTER else Paint.Align.LEFT)
 
-                    dividerPaint.color = Color.parseColor("#3B82F6")
-                    dividerPaint.strokeWidth = 0.5f
-                    c.drawLine(curX + col.width, y, curX + col.width, y + headerRowHeight, dividerPaint)
-
+                    // Vertical divider line
+                    c.drawLine(curX + col.width, y, curX + col.width, y + headerRowHeight, outerGridPaint)
                     curX += col.width
                 }
             }
 
-            var currentY = 40f
+            val empMap = allEmployees.associateBy { it.employeeId.trim() }
 
-            // Document Title
-            canvas.drawText("MONTHLY PERFORMANCE REPORT", pageWidth / 2f, currentY, titlePaint)
-            currentY += 16f
+            // Only include officers who have actual records in the submitted data
+            val groupedByOfficer = data.groupBy { it.employeeId.trim() }
+            val allRelevantEmpIds = data.map { it.employeeId.trim() }.filter { it.isNotBlank() }.distinct()
 
-            // Subtitle / Period
-            canvas.drawText("Period: $monthRange", pageWidth / 2f, currentY, subTitlePaint)
-            currentY += 14f
+            val officerSummaries = allRelevantEmpIds.mapNotNull { empId ->
+                val list = groupedByOfficer[empId] ?: return@mapNotNull null
+                if (list.isEmpty()) return@mapNotNull null
+                val officerEmp = empMap[empId]
+                val first = list.first()
 
-            // Meta Info
-            val metaBuilder = StringBuilder()
-            if (managerName.isNotBlank()) metaBuilder.append("Manager / Team: $managerName  |  ")
-            metaBuilder.append("Generated On: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())}")
-            canvas.drawText(metaBuilder.toString(), pageWidth / 2f, currentY, metaPaint)
-            currentY += 16f
+                val cardCount = list.count { !it.limit.equals("NIL", ignoreCase = true) }
+                val empName = (officerEmp?.name?.takeIf { it.isNotBlank() } ?: first.employeeName.takeIf { it.isNotBlank() } ?: empId).trim().uppercase(Locale.getDefault())
+                val branch = (officerEmp?.branch?.takeIf { it.isNotBlank() } ?: first.branch).trim()
+                val rawZone = (first.zone.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }
+                    ?: officerEmp?.zone?.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) } ?: "").trim()
 
-            // Grouped Data for Stats
-            val groupedData = data.groupBy { it.employeeId + "_" + it.month }.map { (_, performances) ->
-                val first = performances.first()
-                val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
-                ReportSummary(first.employeeId, first.employeeName, first.branch, first.month, first.timestamp, actualCount)
-            }
-            val totalOfficers = groupedData.map { it.employeeId }.distinct().size
-            val totalCards = groupedData.sumOf { it.totalRecords }
-
-            // Summary Stats Box
-            val statsBoxRect = RectF(marginLeft, currentY, marginRight, currentY + 28f)
-            canvas.drawRoundRect(statsBoxRect, 4f, 4f, statsCardBgPaint)
-            canvas.drawRoundRect(statsBoxRect, 4f, 4f, statsCardBorderPaint)
-
-            val statsBaseline = currentY + 18f
-            canvas.drawText("Total Active Officers: $totalOfficers", marginLeft + 12f, statsBaseline, statsTextPaint)
-            val cardsText = "Total Cards Issued: $totalCards"
-            canvas.drawText(cardsText, marginRight - 12f - statsTextPaint.measureText(cardsText), statsBaseline, statsTextPaint)
-            currentY += 38f
-
-            // Table Header on Page 1
-            drawHeaderRow(canvas, currentY)
-            currentY += headerRowHeight
-
-            // Prepare Row Data
-            val rows: List<List<String>> = if (isSummary) {
-                groupedData.mapIndexed { idx, item ->
-                    listOf(
-                        (idx + 1).toString(),
-                        item.month,
-                        item.employeeName,
-                        item.branch,
-                        item.totalRecords.toString()
-                    )
+                val zone = when {
+                    rawZone.isNotBlank() -> rawZone
+                    branch.contains("CTG", ignoreCase = true) || branch.contains("Chittagong", ignoreCase = true) -> "CTG"
+                    branch.contains("Dhaka", ignoreCase = true) || branch.contains("Shahbagh", ignoreCase = true) ||
+                    branch.contains("Gulshan", ignoreCase = true) || branch.contains("Dhanmondi", ignoreCase = true) ||
+                    branch.contains("Sonargaon", ignoreCase = true) || branch.contains("Nazimuddin", ignoreCase = true) ||
+                    branch.contains("Mohammadpur", ignoreCase = true) || branch.contains("Shishu Park", ignoreCase = true) ||
+                    branch.contains("Hotel Intercontinental", ignoreCase = true) || branch.contains("Mohakhali", ignoreCase = true) ||
+                    branch.contains("Kafrul", ignoreCase = true) || branch.contains("Kuril", ignoreCase = true) ||
+                    branch.contains("Ring Road", ignoreCase = true) || branch.contains("Darussalam", ignoreCase = true) -> "Dhaka"
+                    else -> "Others"
                 }
+
+                val salesMgr = (officerEmp?.salesManager?.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }
+                    ?: first.salesManager.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) } ?: "").trim()
+
+                val baseMonthlyTarget = officerMonthlyTargets[empId]?.takeIf { it > 0 }
+                    ?: officerEmp?.monthlyTarget?.takeIf { it > 0 }
+                    ?: when {
+                        zone.contains("Dhaka", ignoreCase = true) -> 75
+                        zone.contains("CTG", ignoreCase = true) || zone.contains("Chittagong", ignoreCase = true) -> 60
+                        else -> 50
+                    }
+                val target = baseMonthlyTarget * monthCount.coerceAtLeast(1)
+                val yearlyTarget = officerYearlyTargets[empId]?.takeIf { it > 0 }
+                    ?: officerEmp?.yearlyTarget?.takeIf { it > 0 }
+                    ?: (baseMonthlyTarget * 12)
+                val short = maxOf(0, target - cardCount)
+                val rate = if (target > 0) (cardCount.toDouble() / target.toDouble()) * 100.0 else 0.0
+                val rateStr = String.format(Locale.US, "%.1f%%", rate)
+
+                OfficerSummary(
+                    employeeId = empId,
+                    employeeName = empName,
+                    branch = branch,
+                    zone = zone,
+                    salesManager = salesMgr,
+                    total = cardCount,
+                    target = target,
+                    yearlyTarget = yearlyTarget,
+                    short = short,
+                    achievementRate = rate,
+                    achievementStr = rateStr
+                )
+            }.sortedWith(
+                compareByDescending<OfficerSummary> { it.achievementRate }
+                    .thenByDescending { it.total }
+                    .thenBy { it.employeeName }
+            )
+
+            val knownSalesManagers = mutableSetOf<String>()
+            officerSummaries.forEach {
+                if (it.salesManager.isNotBlank() && !it.salesManager.equals("N/A", ignoreCase = true) && !it.salesManager.equals("Direct / Head Office", ignoreCase = true)) {
+                    knownSalesManagers.add(it.salesManager.trim())
+                }
+            }
+
+            val managersList = if (isSalesManagerReport) {
+                knownSalesManagers.toList()
+            } else if (managerName.isNotBlank()) {
+                knownSalesManagers.filter { it.equals(managerName.trim(), ignoreCase = true) }
             } else {
-                val details = data.filter { !it.limit.equals("NIL", ignoreCase = true) }
-                if (details.isEmpty()) {
-                    emptyList()
+                knownSalesManagers.toList()
+            }
+
+            val managerSummaries = managersList.mapNotNull { mName ->
+                val officers = officerSummaries.filter { it.salesManager.equals(mName, ignoreCase = true) }
+                if (officers.isEmpty()) {
+                    return@mapNotNull null
+                }
+                val mgrUser = allEmployees.firstOrNull { it.name.trim().equals(mName, ignoreCase = true) }
+                val officerCount = officers.size
+                // Total is the total cards completed by the Sales Manager's team
+                val totalCards = officers.sumOf { it.total }
+                // Target is the Sales Manager's team's total yearly target
+                val totalYearlyTarget = officers.sumOf { it.yearlyTarget }.let { sum ->
+                    if (sum > 0) sum else (mgrUser?.yearlyTarget?.takeIf { it > 0 } ?: 0)
+                }
+                val short = maxOf(0, totalYearlyTarget - totalCards)
+                val rate = if (totalYearlyTarget > 0) (totalCards.toDouble() / totalYearlyTarget.toDouble()) * 100.0 else 0.0
+                val rateStr = String.format(Locale.US, "%.1f%%", rate)
+                val zone = officers.map { it.zone.trim() }
+                    .filter { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }
+                    .distinct()
+                    .joinToString(", ")
+                    .ifBlank { mgrUser?.zone?.takeIf { it.isNotBlank() } ?: "General" }
+
+                SalesManagerSummary(
+                    managerName = mName.uppercase(Locale.getDefault()),
+                    zone = zone,
+                    officerCount = officerCount,
+                    total = totalCards,
+                    target = totalYearlyTarget,
+                    short = short,
+                    achievementRate = rate,
+                    achievementStr = rateStr
+                )
+            }.sortedWith(
+                compareByDescending<SalesManagerSummary> { it.achievementRate }
+                    .thenByDescending { it.total }
+                    .thenBy { it.managerName }
+            )
+
+            val renderSummaryTable = isSummary || !includeDetails || true // Target Summary is always primary
+
+            if (renderSummaryTable) {
+                var currentY = 24f
+
+                // Document Header
+                val reportTitleText = if (isSalesManagerReport) {
+                    "SALES MANAGER PERFORMANCE & TARGET ACHIEVEMENT REPORT"
                 } else {
-                    details.mapIndexed { idx, item ->
-                        listOf(
+                    "EMPLOYEE PERFORMANCE & TARGET ACHIEVEMENT REPORT"
+                }
+                canvas.drawText(reportTitleText, pageWidth / 2f, currentY, titlePaint)
+                currentY += 13f
+
+                val dateFormatted = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
+                val metaText = StringBuilder().apply {
+                    append("Period: $monthRange")
+                    if (isSalesManagerReport) {
+                        append("  |  Total Managers: ${managerSummaries.size}")
+                        append("  |  Total Officers: ${officerSummaries.size}")
+                    } else {
+                        append("  |  Total Officers: ${officerSummaries.size}")
+                        if (managerName.isNotBlank()) append("  |  Manager: $managerName")
+                    }
+                    append("  |  Generated: $dateFormatted")
+                }.toString()
+                canvas.drawText(metaText, pageWidth / 2f, currentY, metaPaint)
+                currentY += 10f
+
+                // Header row
+                drawHeaderRow(canvas, currentY)
+                currentY += headerRowHeight
+
+                if (isSalesManagerReport) {
+                    // Draw Sales Manager Performance rows
+                    managerSummaries.forEachIndexed { idx, mgr ->
+                        if (currentY + dataRowHeight > pageHeight - 32f) {
+                            drawFooter(canvas, pageNum)
+                            pdfDocument.finishPage(currentPage)
+                            pageNum++
+                            pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                            currentPage = pdfDocument.startPage(pageInfo)
+                            canvas = currentPage.canvas
+
+                            metaPaint.textAlign = Paint.Align.LEFT
+                            canvas.drawText("SALES MANAGER PERFORMANCE & TARGET ACHIEVEMENT - $monthRange", marginLeft, 20f, metaPaint)
+                            metaPaint.textAlign = Paint.Align.CENTER
+                            canvas.drawLine(marginLeft, 24f, marginRight, 24f, outerGridPaint)
+
+                            currentY = 28f
+                            drawHeaderRow(canvas, currentY)
+                            currentY += headerRowHeight
+                        }
+
+                        canvas.drawRect(marginLeft, currentY, marginRight, currentY + dataRowHeight, rowBgPaint)
+
+                        val textY = currentY + (dataRowHeight / 2f) - ((dataBoldPaint.descent() + dataBoldPaint.ascent()) / 2f)
+                        var curX = marginLeft
+
+                        for (col in colDefs) {
+                            when (col.key) {
+                                "sl" -> drawFitText(canvas, (idx + 1).toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "manager" -> drawFitText(canvas, mgr.managerName, curX + 4f, textY, col.width - 8f, dataBoldPaint, Paint.Align.LEFT)
+                                "zone" -> drawFitText(canvas, mgr.zone, curX + (col.width / 2f), textY, col.width - 4f, dataTextPaint, Paint.Align.CENTER)
+                                "officers" -> drawFitText(canvas, mgr.officerCount.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "total" -> drawFitText(canvas, mgr.total.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "target" -> drawFitText(canvas, mgr.target.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "short" -> drawFitText(canvas, mgr.short.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "achievement" -> {
+                                    val achPaint = if (mgr.achievementRate >= 50.0) achievementGreenPaint else achievementRedPaint
+                                    drawFitText(canvas, mgr.achievementStr, curX + (col.width / 2f), textY, col.width - 4f, achPaint, Paint.Align.CENTER)
+                                }
+                            }
+                            curX += col.width
+                        }
+
+                        // Cell Borders
+                        canvas.drawLine(marginLeft, currentY + dataRowHeight, marginRight, currentY + dataRowHeight, gridPaint)
+                        canvas.drawLine(marginLeft, currentY, marginLeft, currentY + dataRowHeight, outerGridPaint)
+                        canvas.drawLine(marginRight, currentY, marginRight, currentY + dataRowHeight, outerGridPaint)
+
+                        var lineX = marginLeft
+                        for (col in colDefs) {
+                            lineX += col.width
+                            canvas.drawLine(lineX, currentY, lineX, currentY + dataRowHeight, gridPaint)
+                        }
+
+                        currentY += dataRowHeight
+                    }
+                } else {
+                    // Draw Officer Performance rows (with dynamic Zone and Sales Manager)
+                    for (officer in officerSummaries) {
+                        if (currentY + dataRowHeight > pageHeight - 32f) {
+                            drawFooter(canvas, pageNum)
+                            pdfDocument.finishPage(currentPage)
+                            pageNum++
+                            pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                            currentPage = pdfDocument.startPage(pageInfo)
+                            canvas = currentPage.canvas
+
+                            // Running title on continuation page
+                            metaPaint.textAlign = Paint.Align.LEFT
+                            canvas.drawText("EMPLOYEE PERFORMANCE & TARGET ACHIEVEMENT - $monthRange", marginLeft, 20f, metaPaint)
+                            metaPaint.textAlign = Paint.Align.CENTER
+                            canvas.drawLine(marginLeft, 24f, marginRight, 24f, outerGridPaint)
+
+                            currentY = 28f
+                            drawHeaderRow(canvas, currentY)
+                            currentY += headerRowHeight
+                        }
+
+                        // Background
+                        canvas.drawRect(marginLeft, currentY, marginRight, currentY + dataRowHeight, rowBgPaint)
+
+                        val textY = currentY + (dataRowHeight / 2f) - ((dataTextPaint.descent() + dataTextPaint.ascent()) / 2f)
+                        var curX = marginLeft
+
+                        for (col in colDefs) {
+                            when (col.key) {
+                                "branch" -> drawFitText(canvas, officer.branch, curX + 4f, textY, col.width - 8f, dataTextPaint, Paint.Align.LEFT)
+                                "official" -> drawFitText(canvas, officer.employeeName, curX + 4f, textY, col.width - 8f, dataBoldPaint, Paint.Align.LEFT)
+                                "manager" -> drawFitText(canvas, officer.salesManager, curX + 4f, textY, col.width - 8f, dataTextPaint, Paint.Align.LEFT)
+                                "zone" -> drawFitText(canvas, officer.zone, curX + (col.width / 2f), textY, col.width - 4f, dataTextPaint, Paint.Align.CENTER)
+                                "total" -> drawFitText(canvas, officer.total.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "target" -> drawFitText(canvas, officer.target.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "short" -> drawFitText(canvas, officer.short.toString(), curX + (col.width / 2f), textY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                                "achievement" -> {
+                                    val achPaint = if (officer.achievementRate >= 50.0) achievementGreenPaint else achievementRedPaint
+                                    drawFitText(canvas, officer.achievementStr, curX + (col.width / 2f), textY, col.width - 4f, achPaint, Paint.Align.CENTER)
+                                }
+                            }
+                            curX += col.width
+                        }
+
+                        // Cell Borders
+                        canvas.drawLine(marginLeft, currentY + dataRowHeight, marginRight, currentY + dataRowHeight, gridPaint)
+                        canvas.drawLine(marginLeft, currentY, marginLeft, currentY + dataRowHeight, outerGridPaint)
+                        canvas.drawLine(marginRight, currentY, marginRight, currentY + dataRowHeight, outerGridPaint)
+
+                        var lineX = marginLeft
+                        for (col in colDefs) {
+                            lineX += col.width
+                            canvas.drawLine(lineX, currentY, lineX, currentY + dataRowHeight, gridPaint)
+                        }
+
+                        currentY += dataRowHeight
+                    }
+                }
+
+                // Total summary row at bottom
+                if (currentY + 22f > pageHeight - 32f) {
+                    drawFooter(canvas, pageNum)
+                    pdfDocument.finishPage(currentPage)
+                    pageNum++
+                    pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                    currentPage = pdfDocument.startPage(pageInfo)
+                    canvas = currentPage.canvas
+                    currentY = 28f
+                    drawHeaderRow(canvas, currentY)
+                    currentY += headerRowHeight
+                }
+
+                val totalRowHeight = 22f
+                canvas.drawRect(marginLeft, currentY, marginRight, currentY + totalRowHeight, totalRowBgPaint)
+
+                val totalTextY = currentY + (totalRowHeight / 2f) - ((dataBoldPaint.descent() + dataBoldPaint.ascent()) / 2f)
+
+                val sumTotal = if (isSalesManagerReport) managerSummaries.sumOf { it.total } else officerSummaries.sumOf { it.total }
+                val sumTarget = if (isSalesManagerReport) managerSummaries.sumOf { it.target } else officerSummaries.sumOf { it.target }
+                val sumShort = if (isSalesManagerReport) managerSummaries.sumOf { it.short } else officerSummaries.sumOf { it.short }
+                val sumOfficers = if (isSalesManagerReport) managerSummaries.sumOf { it.officerCount } else officerSummaries.size
+                val overallRate = if (sumTarget > 0) (sumTotal.toDouble() / sumTarget.toDouble()) * 100.0 else 0.0
+                val overallRateStr = String.format(Locale.US, "%.1f%%", overallRate)
+                val totalAchPaint = if (overallRate >= 50.0) achievementGreenPaint else achievementRedPaint
+
+                var curTotalX = marginLeft
+                for (col in colDefs) {
+                    when (col.key) {
+                        "branch", "manager" -> {
+                            drawFitText(canvas, "Total", curTotalX + 5f, totalTextY, col.width - 8f, dataBoldPaint, Paint.Align.LEFT)
+                        }
+                        "officers" -> {
+                            drawFitText(canvas, sumOfficers.toString(), curTotalX + (col.width / 2f), totalTextY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                        }
+                        "total" -> {
+                            drawFitText(canvas, sumTotal.toString(), curTotalX + (col.width / 2f), totalTextY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                        }
+                        "target" -> {
+                            drawFitText(canvas, sumTarget.toString(), curTotalX + (col.width / 2f), totalTextY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                        }
+                        "short" -> {
+                            drawFitText(canvas, sumShort.toString(), curTotalX + (col.width / 2f), totalTextY, col.width - 4f, dataBoldPaint, Paint.Align.CENTER)
+                        }
+                        "achievement" -> {
+                            drawFitText(canvas, overallRateStr, curTotalX + (col.width / 2f), totalTextY, col.width - 4f, totalAchPaint, Paint.Align.CENTER)
+                        }
+                    }
+                    curTotalX += col.width
+                }
+
+                // Borders for total row (double bottom border)
+                canvas.drawLine(marginLeft, currentY, marginRight, currentY, outerGridPaint)
+                canvas.drawLine(marginLeft, currentY + totalRowHeight - 1.5f, marginRight, currentY + totalRowHeight - 1.5f, outerGridPaint)
+                canvas.drawLine(marginLeft, currentY + totalRowHeight, marginRight, currentY + totalRowHeight, outerGridPaint)
+                canvas.drawLine(marginLeft, currentY, marginLeft, currentY + totalRowHeight, outerGridPaint)
+                canvas.drawLine(marginRight, currentY, marginRight, currentY + totalRowHeight, outerGridPaint)
+
+                var tLineX = marginLeft
+                for (col in colDefs) {
+                    tLineX += col.width
+                    canvas.drawLine(tLineX, currentY, tLineX, currentY + totalRowHeight, gridPaint)
+                }
+
+                currentY += totalRowHeight
+            }
+
+            // If user explicitly selected Full Report or Details, append Card Application Details
+            if (includeDetails) {
+                val details = data.filter { !it.limit.equals("NIL", ignoreCase = true) }
+                if (details.isNotEmpty()) {
+                    // Start new page for details
+                    drawFooter(canvas, pageNum)
+                    pdfDocument.finishPage(currentPage)
+                    pageNum++
+                    pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                    currentPage = pdfDocument.startPage(pageInfo)
+                    canvas = currentPage.canvas
+
+                    var currentY = 24f
+                    canvas.drawText("INDIVIDUAL CARD APPLICATION DETAILS", pageWidth / 2f, currentY, titlePaint)
+                    currentY += 13f
+                    canvas.drawText("Period: $monthRange  |  Total Approved Cards: ${details.size}", pageWidth / 2f, currentY, metaPaint)
+                    currentY += 12f
+
+                    val detailCols = listOf(
+                        PdfCol("SL", 28f, true),
+                        PdfCol("Month", 58f, false),
+                        PdfCol("Officer", 100f, false),
+                        PdfCol("Branch", 95f, false),
+                        PdfCol("Applicant Name", 115f, false),
+                        PdfCol("A/C No", 95f, false),
+                        PdfCol("Limit", 64f, true)
+                    )
+
+                    fun drawDetailHeader(c: Canvas, y: Float) {
+                        c.drawRect(marginLeft, y, marginRight, y + headerRowHeight, headerBgPaint)
+                        c.drawRect(marginLeft, y, marginRight, y + headerRowHeight, outerGridPaint)
+                        var dCurX = marginLeft
+                        for (dCol in detailCols) {
+                            val dLabelY = y + (headerRowHeight / 2f) - ((headerTextPaint.descent() + headerTextPaint.ascent()) / 2f)
+                            val dLabelX = if (dCol.isCenter) dCurX + (dCol.width / 2f) else dCurX + 4f
+                            drawFitText(c, dCol.title, dLabelX, dLabelY, dCol.width - 6f, headerTextPaint, if (dCol.isCenter) Paint.Align.CENTER else Paint.Align.LEFT)
+                            c.drawLine(dCurX + dCol.width, y, dCurX + dCol.width, y + headerRowHeight, outerGridPaint)
+                            dCurX += dCol.width
+                        }
+                    }
+
+                    drawDetailHeader(canvas, currentY)
+                    currentY += headerRowHeight
+
+                    details.forEachIndexed { idx, item ->
+                        if (currentY + dataRowHeight > pageHeight - 32f) {
+                            drawFooter(canvas, pageNum)
+                            pdfDocument.finishPage(currentPage)
+                            pageNum++
+                            pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
+                            currentPage = pdfDocument.startPage(pageInfo)
+                            canvas = currentPage.canvas
+
+                            metaPaint.textAlign = Paint.Align.LEFT
+                            canvas.drawText("CARD APPLICATION DETAILS - $monthRange", marginLeft, 20f, metaPaint)
+                            metaPaint.textAlign = Paint.Align.CENTER
+                            canvas.drawLine(marginLeft, 24f, marginRight, 24f, outerGridPaint)
+
+                            currentY = 28f
+                            drawDetailHeader(canvas, currentY)
+                            currentY += headerRowHeight
+                        }
+
+                        val isEven = (idx % 2 == 0)
+                        rowBgPaint.color = if (isEven) Color.parseColor("#F8FAFC") else Color.WHITE
+                        canvas.drawRect(marginLeft, currentY, marginRight, currentY + dataRowHeight, rowBgPaint)
+
+                        val dTextY = currentY + (dataRowHeight / 2f) - ((dataTextPaint.descent() + dataTextPaint.ascent()) / 2f)
+                        var dCurX = marginLeft
+
+                        val rowVals = listOf(
                             (idx + 1).toString(),
                             item.month,
                             item.employeeName,
@@ -276,108 +736,23 @@ object ReportExporter {
                             item.accountNo,
                             item.limit.ifBlank { "-" }
                         )
-                    }
-                }
-            }
 
-            if (rows.isEmpty() && !isSummary) {
-                // Empty Details Row
-                rowBgPaint.color = Color.WHITE
-                canvas.drawRect(marginLeft, currentY, marginRight, currentY + 28f, rowBgPaint)
-                val emptyNotice = "No individual card records submitted (All NIL or no details)"
-                val noticeX = (pageWidth - dataTextPaint.measureText(emptyNotice)) / 2f
-                val noticeY = currentY + 18f
-                canvas.drawText(emptyNotice, noticeX, noticeY, dataTextPaint)
-                canvas.drawLine(marginLeft, currentY + 28f, marginRight, currentY + 28f, dividerPaint)
-                currentY += 28f
-            } else {
-                rows.forEachIndexed { rowIdx, rowValues ->
-                    // Check if new page is needed
-                    if (currentY + dataRowHeight > pageHeight - 45f) {
-                        drawFooter(canvas, pageNum)
-                        pdfDocument.finishPage(currentPage)
-                        pageNum++
-                        pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
-                        currentPage = pdfDocument.startPage(pageInfo)
-                        canvas = currentPage.canvas
-
-                        // Mini running header
-                        metaPaint.textAlign = Paint.Align.LEFT
-                        canvas.drawText("MONTHLY PERFORMANCE REPORT - $monthRange", marginLeft, 26f, metaPaint)
-                        metaPaint.textAlign = Paint.Align.CENTER
-                        dividerPaint.color = Color.parseColor("#CBD5E1")
-                        canvas.drawLine(marginLeft, 32f, marginRight, 32f, dividerPaint)
-
-                        currentY = 40f
-                        drawHeaderRow(canvas, currentY)
-                        currentY += headerRowHeight
-                    }
-
-                    // Draw Data Row
-                    val isEven = (rowIdx % 2 == 0)
-                    rowBgPaint.color = if (isEven) Color.parseColor("#F8FAFC") else Color.WHITE
-                    canvas.drawRect(marginLeft, currentY, marginRight, currentY + dataRowHeight, rowBgPaint)
-
-                    var curX = marginLeft
-                    for (cIdx in activeCols.indices) {
-                        val col = activeCols[cIdx]
-                        val rawVal = rowValues.getOrElse(cIdx) { "" }
-                        val textToDraw = fitText(rawVal, col.width - 6f, dataTextPaint)
-                        val textY = currentY + (dataRowHeight / 2f) - ((dataTextPaint.descent() + dataTextPaint.ascent()) / 2f)
-                        val textX = if (col.isCenter) {
-                            curX + (col.width - dataTextPaint.measureText(textToDraw)) / 2f
-                        } else {
-                            curX + 5f
+                        for (cIdx in detailCols.indices) {
+                            val col = detailCols[cIdx]
+                            val textVal = rowVals[cIdx]
+                            val tX = if (col.isCenter) dCurX + (col.width / 2f) else dCurX + 4f
+                            val p = if (cIdx == 2) dataBoldPaint else dataTextPaint
+                            drawFitText(canvas, textVal, tX, dTextY, col.width - 6f, p, if (col.isCenter) Paint.Align.CENTER else Paint.Align.LEFT)
+                            canvas.drawLine(dCurX + col.width, currentY, dCurX + col.width, currentY + dataRowHeight, gridPaint)
+                            dCurX += col.width
                         }
-                        canvas.drawText(textToDraw, textX, textY, dataTextPaint)
 
-                        // Vertical divider
-                        dividerPaint.color = Color.parseColor("#E2E8F0")
-                        dividerPaint.strokeWidth = 0.5f
-                        canvas.drawLine(curX + col.width, currentY, curX + col.width, currentY + dataRowHeight, dividerPaint)
+                        canvas.drawLine(marginLeft, currentY + dataRowHeight, marginRight, currentY + dataRowHeight, gridPaint)
+                        canvas.drawLine(marginLeft, currentY, marginLeft, currentY + dataRowHeight, outerGridPaint)
+                        canvas.drawLine(marginRight, currentY, marginRight, currentY + dataRowHeight, outerGridPaint)
 
-                        curX += col.width
+                        currentY += dataRowHeight
                     }
-
-                    // Bottom horizontal border
-                    dividerPaint.color = Color.parseColor("#E2E8F0")
-                    canvas.drawLine(marginLeft, currentY + dataRowHeight, marginRight, currentY + dataRowHeight, dividerPaint)
-                    // Outer border
-                    canvas.drawLine(marginLeft, currentY, marginLeft, currentY + dataRowHeight, dividerPaint)
-                    canvas.drawLine(marginRight, currentY, marginRight, currentY + dataRowHeight, dividerPaint)
-
-                    currentY += dataRowHeight
-                }
-
-                // Total row for summary
-                if (isSummary) {
-                    if (currentY + 22f > pageHeight - 45f) {
-                        drawFooter(canvas, pageNum)
-                        pdfDocument.finishPage(currentPage)
-                        pageNum++
-                        pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create()
-                        currentPage = pdfDocument.startPage(pageInfo)
-                        canvas = currentPage.canvas
-                        currentY = 40f
-                    }
-                    val totalRowHeight = 22f
-                    rowBgPaint.color = Color.parseColor("#F1F5F9")
-                    canvas.drawRect(marginLeft, currentY, marginRight, currentY + totalRowHeight, rowBgPaint)
-
-                    val totalLabel = "TOTAL"
-                    val labelY = currentY + (totalRowHeight / 2f) - ((dataBoldPaint.descent() + dataBoldPaint.ascent()) / 2f)
-                    canvas.drawText(totalLabel, marginLeft + 35f + 75f + 5f, labelY, dataBoldPaint)
-
-                    val cardsSumText = totalCards.toString()
-                    val totalCardsX = marginLeft + 35f + 75f + 175f + 148f + (90f - dataBoldPaint.measureText(cardsSumText)) / 2f
-                    canvas.drawText(cardsSumText, totalCardsX, labelY, dataBoldPaint)
-
-                    dividerPaint.color = Color.parseColor("#94A3B8")
-                    dividerPaint.strokeWidth = 1f
-                    canvas.drawLine(marginLeft, currentY + totalRowHeight, marginRight, currentY + totalRowHeight, dividerPaint)
-                    canvas.drawLine(marginLeft, currentY, marginLeft, currentY + totalRowHeight, dividerPaint)
-                    canvas.drawLine(marginRight, currentY, marginRight, currentY + totalRowHeight, dividerPaint)
-                    currentY += totalRowHeight
                 }
             }
 
@@ -600,28 +975,20 @@ object ReportExporter {
     // ========================================================
     enum class XlsxReportMode { FULL, SUMMARY, DETAILS }
 
-    private data class OfficerSummary(
-        val employeeId: String,
-        val employeeName: String,
-        val branch: String,
-        val zone: String,
-        val salesManager: String,
-        val total: Int,
-        val target: Int,
-        val short: Int,
-        val achievementRate: Double,
-        val achievementStr: String
-    )
-
     fun exportPerformanceXlsx(
         context: Context,
         data: List<Performance>,
         monthRange: String,
         officerTargets: Map<String, Int> = emptyMap(),
+        officerYearlyTargets: Map<String, Int> = emptyMap(),
         includeZone: Boolean = true,
         includeSalesManager: Boolean = false,
         includeApplicantDetails: Boolean = true,
-        isShare: Boolean = false
+        isShare: Boolean = false,
+        isSalesManagerReport: Boolean = false,
+        monthCount: Int = 1,
+        allEmployees: List<User> = emptyList(),
+        managerName: String = ""
     ) {
         if (data.isEmpty()) {
             Toast.makeText(context, "No performance records found to export", Toast.LENGTH_SHORT).show()
@@ -662,30 +1029,73 @@ object ReportExporter {
             val sheets = mutableListOf<XlsxGenerator.SheetDef>()
             val nowFormatted = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
 
-            // 1. Grouped Performance Data per Officer
-            val groupedByOfficer = data.groupBy { it.employeeId }
-            val officerSummaries = groupedByOfficer.map { (empId, list) ->
+            val empMap = allEmployees.associateBy { it.employeeId.trim() }
+
+            // Only include officers who have actual records in the submitted data
+            val groupedByOfficer = data.groupBy { it.employeeId.trim() }
+            val allRelevantEmpIds = data.map { it.employeeId.trim() }.filter { it.isNotBlank() }.distinct()
+
+            val officerSummaries = allRelevantEmpIds.mapNotNull { empId ->
+                val list = groupedByOfficer[empId] ?: return@mapNotNull null
+                if (list.isEmpty()) return@mapNotNull null
+                val officerEmp = empMap[empId]
                 val first = list.first()
+
                 val cardCount = list.count { !it.limit.equals("NIL", ignoreCase = true) }
-                // Yearly target: priority to employee's yearlyTarget, else monthlyTarget * 12, default 25 * 12 = 300
-                val yearlyTarget = officerTargets[empId]?.takeIf { it > 0 } ?: (25 * 12)
-                val short = maxOf(0, yearlyTarget - cardCount)
-                val rate = if (yearlyTarget > 0) (cardCount.toDouble() / yearlyTarget.toDouble()) * 100.0 else 0.0
+                val empName = (officerEmp?.name?.takeIf { it.isNotBlank() } ?: first.employeeName.takeIf { it.isNotBlank() } ?: empId).trim().uppercase(Locale.getDefault())
+                val branch = (officerEmp?.branch?.takeIf { it.isNotBlank() } ?: first.branch).trim()
+                val rawZone = (first.zone.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }
+                    ?: officerEmp?.zone?.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) } ?: "").trim()
+
+                val zone = when {
+                    rawZone.isNotBlank() -> rawZone
+                    branch.contains("CTG", ignoreCase = true) || branch.contains("Chittagong", ignoreCase = true) -> "CTG"
+                    branch.contains("Dhaka", ignoreCase = true) || branch.contains("Shahbagh", ignoreCase = true) ||
+                    branch.contains("Gulshan", ignoreCase = true) || branch.contains("Dhanmondi", ignoreCase = true) ||
+                    branch.contains("Sonargaon", ignoreCase = true) || branch.contains("Nazimuddin", ignoreCase = true) ||
+                    branch.contains("Mohammadpur", ignoreCase = true) || branch.contains("Shishu Park", ignoreCase = true) ||
+                    branch.contains("Hotel Intercontinental", ignoreCase = true) || branch.contains("Mohakhali", ignoreCase = true) ||
+                    branch.contains("Kafrul", ignoreCase = true) || branch.contains("Kuril", ignoreCase = true) ||
+                    branch.contains("Ring Road", ignoreCase = true) || branch.contains("Darussalam", ignoreCase = true) -> "Dhaka"
+                    else -> "Others"
+                }
+
+                val salesMgr = (officerEmp?.salesManager?.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }
+                    ?: first.salesManager.takeIf { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) } ?: "").trim()
+
+                val baseMonthlyTarget = officerTargets[empId]?.takeIf { it > 0 }
+                    ?: officerEmp?.monthlyTarget?.takeIf { it > 0 }
+                    ?: when {
+                        zone.contains("Dhaka", ignoreCase = true) -> 75
+                        zone.contains("CTG", ignoreCase = true) || zone.contains("Chittagong", ignoreCase = true) -> 60
+                        else -> 50
+                    }
+                val target = baseMonthlyTarget * monthCount.coerceAtLeast(1)
+                val yearlyTarget = officerYearlyTargets[empId]?.takeIf { it > 0 }
+                    ?: officerEmp?.yearlyTarget?.takeIf { it > 0 }
+                    ?: (baseMonthlyTarget * 12)
+                val short = maxOf(0, target - cardCount)
+                val rate = if (target > 0) (cardCount.toDouble() / target.toDouble()) * 100.0 else 0.0
                 val rateStr = String.format(Locale.US, "%.1f%%", rate)
 
                 OfficerSummary(
                     employeeId = empId,
-                    employeeName = first.employeeName.uppercase(Locale.getDefault()),
-                    branch = first.branch,
-                    zone = first.zone,
-                    salesManager = first.salesManager,
+                    employeeName = empName,
+                    branch = branch,
+                    zone = zone,
+                    salesManager = salesMgr,
                     total = cardCount,
-                    target = yearlyTarget,
+                    target = target,
+                    yearlyTarget = yearlyTarget,
                     short = short,
                     achievementRate = rate,
                     achievementStr = rateStr
                 )
-            }.sortedByDescending { it.achievementRate }
+            }.sortedWith(
+                compareByDescending<OfficerSummary> { it.achievementRate }
+                    .thenByDescending { it.total }
+                    .thenBy { it.employeeName }
+            )
 
             val totalAchievedSum = officerSummaries.sumOf { it.total }
             val totalTargetSum = officerSummaries.sumOf { it.target }
@@ -694,7 +1104,7 @@ object ReportExporter {
             val overallRateStr = String.format(Locale.US, "%.1f%%", overallRate)
 
             // Dynamic columns matching the uploaded Excel image layout:
-            // Branch | Branch Official | (Sales Manager) | (Zone) | Total | Target | SHORT | Achievemnet
+            // Branch | Branch Official | (Sales Manager) | (Zone) | Total | Target | SHORT | Achievement
             val summaryCols = mutableListOf<XlsxGenerator.ColumnDef>()
             summaryCols.add(XlsxGenerator.ColumnDef("Branch", width = 24.0, isBold = false))
             summaryCols.add(XlsxGenerator.ColumnDef("Branch Official", width = 26.0, isBold = true))
@@ -707,7 +1117,7 @@ object ReportExporter {
             summaryCols.add(XlsxGenerator.ColumnDef("Total", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
             summaryCols.add(XlsxGenerator.ColumnDef("Target", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
             summaryCols.add(XlsxGenerator.ColumnDef("SHORT", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
-            summaryCols.add(XlsxGenerator.ColumnDef("Achievemnet", width = 16.0, isCenter = true, isBold = true, isAchievement = true))
+            summaryCols.add(XlsxGenerator.ColumnDef("Achievement", width = 16.0, isCenter = true, isBold = true, isAchievement = true))
 
             val summaryRows = officerSummaries.map { officer ->
                 val row = mutableListOf<Any?>()
@@ -746,18 +1156,142 @@ object ReportExporter {
                 "Total Search Records:" to "${data.size} items"
             )
 
-            sheets.add(
-                XlsxGenerator.SheetDef(
-                    name = "Performance Summary",
-                    reportTitle = "EMPLOYEE PERFORMANCE REPORT",
-                    period = monthRange,
-                    metadata = summaryMeta,
-                    columns = summaryCols,
-                    rows = summaryRows,
-                    totalRow = summaryTotalRow,
-                    enableAutoFilter = true
+            // 2. Grouped Performance Data per Sales Manager
+            val knownSalesManagers = mutableSetOf<String>()
+            officerSummaries.forEach {
+                if (it.salesManager.isNotBlank() && !it.salesManager.equals("N/A", ignoreCase = true) && !it.salesManager.equals("Direct / Head Office", ignoreCase = true)) {
+                    knownSalesManagers.add(it.salesManager.trim())
+                }
+            }
+
+            val managersList = if (isSalesManagerReport) {
+                knownSalesManagers.toList()
+            } else if (managerName.isNotBlank()) {
+                knownSalesManagers.filter { it.equals(managerName.trim(), ignoreCase = true) }
+            } else {
+                knownSalesManagers.toList()
+            }
+
+            val managerSummaries = managersList.mapNotNull { mName ->
+                val officers = officerSummaries.filter { it.salesManager.equals(mName, ignoreCase = true) }
+                if (officers.isEmpty()) {
+                    return@mapNotNull null
+                }
+                val mgrUser = allEmployees.firstOrNull { it.name.trim().equals(mName, ignoreCase = true) }
+                val officerCount = officers.size
+                // Total is the total cards completed by the Sales Manager's team
+                val totalCards = officers.sumOf { it.total }
+                // Target is the Sales Manager's team's total yearly target
+                val totalYearlyTarget = officers.sumOf { it.yearlyTarget }.let { sum ->
+                    if (sum > 0) sum else (mgrUser?.yearlyTarget?.takeIf { it > 0 } ?: 0)
+                }
+                val short = maxOf(0, totalYearlyTarget - totalCards)
+                val rate = if (totalYearlyTarget > 0) (totalCards.toDouble() / totalYearlyTarget.toDouble()) * 100.0 else 0.0
+                val rateStr = String.format(Locale.US, "%.1f%%", rate)
+                val zone = officers.map { it.zone.trim() }
+                    .filter { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }
+                    .distinct()
+                    .joinToString(", ")
+                    .ifBlank { mgrUser?.zone?.takeIf { it.isNotBlank() } ?: "General" }
+
+                SalesManagerSummary(
+                    managerName = mName.uppercase(Locale.getDefault()),
+                    zone = zone,
+                    officerCount = officerCount,
+                    total = totalCards,
+                    target = totalYearlyTarget,
+                    short = short,
+                    achievementRate = rate,
+                    achievementStr = rateStr
                 )
+            }.sortedWith(
+                compareByDescending<SalesManagerSummary> { it.achievementRate }
+                    .thenByDescending { it.total }
+                    .thenBy { it.managerName }
             )
+
+            val smTotalAchieved = managerSummaries.sumOf { it.total }
+            val smTotalTarget = managerSummaries.sumOf { it.target }
+            val smTotalShort = managerSummaries.sumOf { it.short }
+            val smTotalOfficers = managerSummaries.sumOf { it.officerCount }
+            val smOverallRate = if (smTotalTarget > 0) (smTotalAchieved.toDouble() / smTotalTarget.toDouble()) * 100.0 else 0.0
+            val smOverallRateStr = String.format(Locale.US, "%.1f%%", smOverallRate)
+
+            val smCols = mutableListOf<XlsxGenerator.ColumnDef>()
+            smCols.add(XlsxGenerator.ColumnDef("SL", width = 8.0, isNumeric = true, isCenter = true))
+            smCols.add(XlsxGenerator.ColumnDef("Sales Manager", width = 26.0, isBold = true))
+            if (includeZone) {
+                smCols.add(XlsxGenerator.ColumnDef("Zone", width = 16.0, isCenter = true))
+            }
+            smCols.add(XlsxGenerator.ColumnDef("Officers", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            smCols.add(XlsxGenerator.ColumnDef("Total", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            smCols.add(XlsxGenerator.ColumnDef("Target", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            smCols.add(XlsxGenerator.ColumnDef("SHORT", width = 12.0, isNumeric = true, isCenter = true, isBold = true))
+            smCols.add(XlsxGenerator.ColumnDef("Achievement", width = 16.0, isCenter = true, isBold = true, isAchievement = true))
+
+            val smRows = managerSummaries.mapIndexed { idx, mgr ->
+                val row = mutableListOf<Any?>()
+                row.add((idx + 1).toLong())
+                row.add(mgr.managerName)
+                if (includeZone) {
+                    row.add(mgr.zone)
+                }
+                row.add(mgr.officerCount.toLong())
+                row.add(mgr.total.toLong())
+                row.add(mgr.target.toLong())
+                row.add(mgr.short.toLong())
+                row.add(mgr.achievementStr)
+                row
+            }
+
+            val smTotalRow = mutableListOf<Any?>()
+            smTotalRow.add("Total")
+            smTotalRow.add("")
+            if (includeZone) {
+                smTotalRow.add("")
+            }
+            smTotalRow.add(smTotalOfficers.toLong())
+            smTotalRow.add(smTotalAchieved.toLong())
+            smTotalTarget.toLong().let { smTotalRow.add(it) }
+            smTotalShort.toLong().let { smTotalRow.add(it) }
+            smTotalRow.add(smOverallRateStr)
+
+            val smMeta = listOf(
+                "Print / Generated Date:" to nowFormatted,
+                "Total Managers:" to "${managerSummaries.size} Managers",
+                "Total Supervised Officers:" to "${officerSummaries.size} Officers",
+                "Total Search Records:" to "${data.size} items"
+            )
+
+            val smSheetDef = XlsxGenerator.SheetDef(
+                name = if (isSalesManagerReport) "Sales Manager Performance" else "Sales Manager Summary",
+                reportTitle = "SALES MANAGER PERFORMANCE REPORT",
+                period = monthRange,
+                metadata = smMeta,
+                columns = smCols,
+                rows = smRows,
+                totalRow = smTotalRow,
+                enableAutoFilter = true
+            )
+
+            val officerSheetDef = XlsxGenerator.SheetDef(
+                name = if (isSalesManagerReport) "Officer Breakdown" else "Performance Summary",
+                reportTitle = "EMPLOYEE PERFORMANCE REPORT",
+                period = monthRange,
+                metadata = summaryMeta,
+                columns = summaryCols,
+                rows = summaryRows,
+                totalRow = summaryTotalRow,
+                enableAutoFilter = true
+            )
+
+            if (isSalesManagerReport) {
+                sheets.add(smSheetDef)
+                sheets.add(officerSheetDef)
+            } else {
+                sheets.add(officerSheetDef)
+                sheets.add(smSheetDef)
+            }
 
             // Sheet 2: Optional Applicant / Cards Details
             if (includeApplicantDetails) {

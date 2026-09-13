@@ -27,10 +27,17 @@ data class User(
         }
 
     val isManagementOrAdmin: Boolean
-        get() = role.equals("Sales Manager", ignoreCase = true) ||
-                role.equals("AGM", ignoreCase = true) ||
-                role.equals("DGM", ignoreCase = true) ||
-                role.equals("ADMIN", ignoreCase = true)
+        get() {
+            val cleanRole = role.trim()
+            return cleanRole.equals("Sales Manager", ignoreCase = true) ||
+                   cleanRole.equals("AGM", ignoreCase = true) ||
+                   cleanRole.equals("DGM", ignoreCase = true) ||
+                   cleanRole.equals("ADMIN", ignoreCase = true) ||
+                   cleanRole.contains("Manager", ignoreCase = true) ||
+                   cleanRole.contains("AGM", ignoreCase = true) ||
+                   cleanRole.contains("DGM", ignoreCase = true) ||
+                   cleanRole.contains("Admin", ignoreCase = true)
+        }
 
     val isTargetEligible: Boolean
         get() = !isManagementOrAdmin

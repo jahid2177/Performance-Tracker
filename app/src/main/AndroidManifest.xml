@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".PerformanceTrackerApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -34,6 +35,11 @@
         <activity 
             android:name=".ui.MyReportActivity"
             android:label="My Reports"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.ReportPreviewActivity"
+            android:label="Report Preview"
             android:screenOrientation="portrait" />
 
         <provider

@@ -78,11 +78,11 @@ class LoginActivity : AppCompatActivity() {
             if (user != null) {
                 if (user.password == inputPass) {
                     
-                    // 🔥 ১. স্ট্যাটাস চেক করা (Admin ব্যতীত অন্যদের অবশ্যই Approved হতে হবে)
-                    val isApproved = user.status.equals("Approved", ignoreCase = true)
-                    val isAdmin = user.role.equals("ADMIN", ignoreCase = true)
+                    // 🔥 ১. স্ট্যাটাস চেক করা (Admin/Management ব্যতীত অন্যদের অবশ্যই Approved হতে হবে)
+                    val isApproved = user.status.equals("Approved", ignoreCase = true) || user.status.isBlank()
+                    val isManagement = user.isManagementOrAdmin
 
-                    if (!isAdmin && !isApproved) {
+                    if (!isManagement && !isApproved) {
                         setLoading(false)
                         isChecking = false
                         Toast.makeText(this, "Your account is pending Admin approval. Please contact Admin.", Toast.LENGTH_LONG).show()
@@ -340,7 +340,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun navigateToDashboard(user: User, effectiveId: String) {
-        if (user.role == "ADMIN" || user.role == "AGM" || user.role == "DGM" || user.role == "Sales Manager") {
+        if (user.isManagementOrAdmin) {
             val intent = Intent(this, AdminDashboardActivity::class.java)
             intent.putExtra("USER_ROLE", user.role) 
             intent.putExtra("USER_NAME", user.name) 

@@ -70,28 +70,42 @@ class MyReportActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         binding.tvEmptyState.visibility = View.GONE
 
-        // 1. Fetch user's assigned targets from Firestore
-        db.collection("employees").document(currentUserId).get()
-            .addOnSuccessListener { userDoc ->
-                val mTarget = userDoc.getLong("monthlyTarget")?.toInt() ?: 0
-                if (mTarget > 0) defaultMonthlyTarget = mTarget
+        val cleanUserId = currentUserId.trim()
 
-                db.collection("targets")
-                    .whereEqualTo("employeeId", currentUserId)
-                    .get()
-                    .addOnSuccessListener { targetSnapshot ->
-                        targetMap.clear()
-                        for (doc in targetSnapshot.documents) {
-                            val target = doc.toObject(EmployeeTarget::class.java)
-                            if (target != null && target.targetCards > 0) {
-                                targetMap[target.month.trim().lowercase()] = target.targetCards
-                            }
+        val onUserFound = { userDocSnapshot: com.google.firebase.firestore.DocumentSnapshot? ->
+            val mTarget = userDocSnapshot?.getLong("monthlyTarget")?.toInt() ?: 0
+            if (mTarget > 0) defaultMonthlyTarget = mTarget
+
+            db.collection("targets")
+                .whereEqualTo("employeeId", cleanUserId)
+                .get()
+                .addOnSuccessListener { targetSnapshot ->
+                    targetMap.clear()
+                    for (doc in targetSnapshot.documents) {
+                        val target = doc.toObject(EmployeeTarget::class.java)
+                        if (target != null && target.targetCards > 0) {
+                            targetMap[target.month.trim().lowercase()] = target.targetCards
                         }
-                        fetchAndBindReports()
                     }
-                    .addOnFailureListener {
-                        fetchAndBindReports()
-                    }
+                    fetchAndBindReports()
+                }
+                .addOnFailureListener {
+                    fetchAndBindReports()
+                }
+        }
+
+        db.collection("employees").document(cleanUserId).get()
+            .addOnSuccessListener { userDoc ->
+                if (userDoc.exists()) {
+                    onUserFound(userDoc)
+                } else {
+                    db.collection("employees").whereEqualTo("employeeId", cleanUserId).get()
+                        .addOnSuccessListener { snap ->
+                            val doc = if (!snap.isEmpty) snap.documents.first() else null
+                            onUserFound(doc)
+                        }
+                        .addOnFailureListener { fetchAndBindReports() }
+                }
             }
             .addOnFailureListener {
                 fetchAndBindReports()
@@ -99,12 +113,13 @@ class MyReportActivity : AppCompatActivity() {
     }
 
     private fun fetchAndBindReports() {
+        val cleanUserId = currentUserId.trim()
         viewModel.getAllReports()
         viewModel.reportList.observe(this) { list ->
             binding.progressBar.visibility = View.GONE
 
             if (list != null) {
-                val myData = list.filter { it.employeeId == currentUserId }
+                val myData = list.filter { it.employeeId.trim().equals(cleanUserId, ignoreCase = true) }
 
                 val groupedList = myData.groupBy { it.month }.map { (monthName, performances) ->
                     val first = performances.first()

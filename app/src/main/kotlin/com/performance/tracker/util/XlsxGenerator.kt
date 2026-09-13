@@ -285,7 +285,7 @@ object XlsxGenerator {
                     col.isAchievement -> {
                         val str = cellValue?.toString()?.replace("%", "")?.trim() ?: ""
                         val rate = str.toDoubleOrNull() ?: 0.0
-                        if (rate >= 100.0) 7 else 8
+                        if (rate >= 50.0) 7 else 8
                     }
                     col.isBold && col.isCenter -> 6
                     col.isBold && !col.isCenter -> 5
@@ -310,7 +310,7 @@ object XlsxGenerator {
                     col.isAchievement -> {
                         val str = cellValue?.toString()?.replace("%", "")?.trim() ?: ""
                         val rate = str.toDoubleOrNull() ?: 0.0
-                        if (rate >= 100.0) 11 else 12
+                        if (rate >= 50.0) 11 else 12
                     }
                     col.isCenter || isNum -> 10
                     else -> 9

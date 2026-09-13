@@ -18,164 +18,201 @@
     <LinearLayout
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:gravity="center_vertical"
-         android:padding="16dp"
-         android:orientation="horizontal">
+         android:padding="14dp"
+         android:orientation="vertical">
 
-        <!-- Left Info Block -->
-        <LinearLayout
-             android:layout_height="wrap_content"
-             android:layout_width="0dp"
-             android:orientation="vertical"
-             android:layout_weight="1"
-             android:layout_marginEnd="8dp">
+        <!-- Top Row: Name on Left, Edit & Delete Actions on Right -->
+        <RelativeLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content">
 
             <TextView
+                 android:id="@+id/tvUserName"
+                 android:layout_width="match_parent"
                  android:layout_height="wrap_content"
-                 android:layout_width="wrap_content"
+                 android:layout_toStartOf="@id/layoutActionButtons"
+                 android:layout_centerVertical="true"
                  android:textSize="15sp"
                  android:textColor="@color/text_primary"
-                 android:id="@+id/tvUserName"
                  android:text="Name: Md Jahidul Islam"
-                 android:textStyle="bold" />
+                 android:textStyle="bold"
+                 android:maxLines="1"
+                 android:ellipsize="end" />
 
             <LinearLayout
+                 android:id="@+id/layoutActionButtons"
+                 android:layout_width="wrap_content"
                  android:layout_height="wrap_content"
-                 android:layout_width="match_parent"
+                 android:layout_alignParentEnd="true"
+                 android:layout_centerVertical="true"
+                 android:orientation="horizontal">
+
+                <!-- Admin Edit Button -->
+                <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/btnEdit"
+                     android:layout_height="32dp"
+                     android:layout_width="32dp"
+                     app:cardElevation="0dp"
+                     app:cardBackgroundColor="@color/badge_green_bg"
+                     app:cardCornerRadius="16dp"
+                     android:clickable="true"
+                     android:focusable="true"
+                     android:visibility="gone">
+
+                    <ImageView
+                         android:layout_height="16dp"
+                         android:layout_width="16dp"
+                         android:layout_gravity="center"
+                         android:src="@android:drawable/ic_menu_edit"
+                         app:tint="@color/badge_green_icon" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Admin Delete Button -->
+                <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/btnDelete"
+                     android:layout_height="32dp"
+                     android:layout_width="32dp"
+                     app:cardElevation="0dp"
+                     app:cardBackgroundColor="@color/badge_red_bg"
+                     app:cardCornerRadius="16dp"
+                     android:layout_marginStart="8dp"
+                     android:clickable="true"
+                     android:focusable="true"
+                     android:visibility="gone">
+
+                    <ImageView
+                         android:layout_height="16dp"
+                         android:layout_width="16dp"
+                         android:layout_gravity="center"
+                         android:src="@android:drawable/ic_menu_delete"
+                         app:tint="@color/badge_red_icon" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <!-- Divider Line -->
+        <View
+             android:layout_width="match_parent"
+             android:layout_height="1dp"
+             android:background="#F1F5F9"
+             android:layout_marginVertical="10dp" />
+
+        <!-- Bottom Row: Month & Date on Left, Cards & Target Pills on Right -->
+        <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:gravity="center_vertical"
+             android:orientation="horizontal">
+
+            <!-- Left: Month Chip + Date -->
+            <LinearLayout
+                 android:layout_width="0dp"
+                 android:layout_height="wrap_content"
+                 android:layout_weight="1"
                  android:gravity="center_vertical"
                  android:orientation="horizontal"
-                 android:layout_marginTop="8dp">
+                 android:layout_marginEnd="6dp">
 
                 <TextView
+                     android:id="@+id/tvMonth"
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
                      android:background="@drawable/bg_badge_mint"
                      android:paddingVertical="3dp"
                      android:textSize="12sp"
                      android:textColor="@color/badge_mint_icon"
-                     android:paddingHorizontal="10dp"
-                     android:id="@+id/tvMonth"
+                     android:paddingHorizontal="9dp"
                      android:text="August"
                      android:textStyle="bold" />
 
                 <TextView
+                     android:id="@+id/tvDate"
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:textSize="12sp"
+                     android:textSize="11sp"
                      android:textColor="@color/text_muted"
-                     android:layout_marginStart="8dp"
-                     android:id="@+id/tvDate"
+                     android:layout_marginStart="6dp"
+                     android:singleLine="true"
+                     android:ellipsize="end"
                      android:text="Submitted: 11 Sept 2026" />
 
             </LinearLayout>
 
-        </LinearLayout>
-
-        <!-- Cards Count Badge Group -->
-        <LinearLayout
-             android:id="@+id/layoutCardsBadge"
-             android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:orientation="vertical"
-             android:gravity="center_horizontal"
-             android:layout_marginEnd="10dp">
-
-            <TextView
-                 android:layout_height="wrap_content"
+            <!-- Right: Cards & Target Pills -->
+            <LinearLayout
                  android:layout_width="wrap_content"
-                 android:textSize="11sp"
-                 android:textColor="@color/text_primary"
-                 android:text="Cards"
-                 android:textStyle="bold" />
-
-            <TextView
-                 android:id="@+id/tvCardsCount"
-                 android:layout_height="34dp"
-                 android:layout_width="34dp"
-                 android:layout_marginTop="3dp"
-                 android:gravity="center"
-                 android:background="@drawable/bg_circle_cards_badge"
-                 android:textColor="#0369A1"
-                 android:textSize="15sp"
-                 android:textStyle="bold"
-                 android:text="12" />
-
-        </LinearLayout>
-
-        <!-- Target Count Badge Group -->
-        <LinearLayout
-             android:id="@+id/layoutTargetBadge"
-             android:layout_height="wrap_content"
-             android:layout_width="wrap_content"
-             android:orientation="vertical"
-             android:gravity="center_horizontal"
-             android:layout_marginEnd="4dp">
-
-            <TextView
                  android:layout_height="wrap_content"
-                 android:layout_width="wrap_content"
-                 android:textSize="11sp"
-                 android:textColor="@color/text_primary"
-                 android:text="Target"
-                 android:textStyle="bold" />
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
 
-            <TextView
-                 android:id="@+id/tvTargetCount"
-                 android:layout_height="34dp"
-                 android:layout_width="34dp"
-                 android:layout_marginTop="3dp"
-                 android:gravity="center"
-                 android:background="@drawable/bg_circle_target_badge"
-                 android:textColor="#E11D48"
-                 android:textSize="15sp"
-                 android:textStyle="bold"
-                 android:text="8" />
+                <!-- Cards Pill -->
+                <LinearLayout
+                     android:id="@+id/layoutCardsBadge"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:background="@drawable/bg_pill_cards"
+                     android:paddingHorizontal="8dp"
+                     android:paddingVertical="4dp"
+                     android:gravity="center"
+                     android:orientation="horizontal"
+                     android:layout_marginEnd="6dp">
+
+                    <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:textSize="11sp"
+                         android:textColor="#0369A1"
+                         android:text="Cards: "
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:id="@+id/tvCardsCount"
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:textColor="#0369A1"
+                         android:textSize="12sp"
+                         android:textStyle="bold"
+                         android:text="13" />
+
+                </LinearLayout>
+
+                <!-- Target Pill -->
+                <LinearLayout
+                     android:id="@+id/layoutTargetBadge"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:background="@drawable/bg_pill_target"
+                     android:paddingHorizontal="8dp"
+                     android:paddingVertical="4dp"
+                     android:gravity="center"
+                     android:orientation="horizontal">
+
+                    <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:textSize="11sp"
+                         android:textColor="#E11D48"
+                         android:text="Target: "
+                         android:textStyle="bold" />
+
+                    <TextView
+                         android:id="@+id/tvTargetCount"
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:textColor="#E11D48"
+                         android:textSize="12sp"
+                         android:textStyle="bold"
+                         android:text="8" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
-
-        <!-- Admin Edit Button -->
-        <com.google.android.material.card.MaterialCardView
-             android:id="@+id/btnEdit"
-             android:layout_height="34dp"
-             android:layout_width="34dp"
-             app:cardElevation="0dp"
-             app:cardBackgroundColor="@color/badge_green_bg"
-             app:cardCornerRadius="17dp"
-             android:layout_marginStart="4dp"
-             android:clickable="true"
-             android:focusable="true"
-             android:visibility="gone">
-
-            <ImageView
-                 android:layout_height="16dp"
-                 android:layout_width="16dp"
-                 android:layout_gravity="center"
-                 android:src="@android:drawable/ic_menu_edit"
-                 app:tint="@color/badge_green_icon" />
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Admin Delete Button -->
-        <com.google.android.material.card.MaterialCardView
-             android:id="@+id/btnDelete"
-             android:layout_height="34dp"
-             android:layout_width="34dp"
-             app:cardElevation="0dp"
-             app:cardBackgroundColor="@color/badge_red_bg"
-             app:cardCornerRadius="17dp"
-             android:layout_marginStart="6dp"
-             android:clickable="true"
-             android:focusable="true"
-             android:visibility="gone">
-
-            <ImageView
-                 android:layout_height="16dp"
-                 android:layout_width="16dp"
-                 android:layout_gravity="center"
-                 android:src="@android:drawable/ic_menu_delete"
-                 app:tint="@color/badge_red_icon" />
-
-        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

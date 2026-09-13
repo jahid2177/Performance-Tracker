@@ -82,4 +82,15 @@
          android:layout_gravity="center"
          android:contentDescription="Edit" />
 
+    <ImageView
+         android:id="@+id/ivDeleteRow"
+         android:layout_height="36dp"
+         android:layout_width="36dp"
+         android:padding="6dp"
+         android:src="@android:drawable/ic_menu_delete"
+         app:tint="#DC2626"
+         android:visibility="gone"
+         android:layout_gravity="center"
+         android:contentDescription="Delete" />
+
 </LinearLayout>

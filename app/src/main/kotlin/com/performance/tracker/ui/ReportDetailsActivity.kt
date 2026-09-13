@@ -38,11 +38,23 @@ class ReportDetailsActivity : AppCompatActivity() {
         val branch = intent.getStringExtra("BRANCH") ?: "Branch"
 
         val loggedInRole = SessionManager.getUserRole(this)
+        val loggedInName = SessionManager.getUserName(this)
         val isAdmin = loggedInRole.equals("ADMIN", ignoreCase = true)
         val isSalesManager = loggedInRole.equals("Sales Manager", ignoreCase = true)
 
         // Permission: Admin can edit any report. Sales Manager can edit reports under their team.
-        canEdit = intent.getBooleanExtra("CAN_EDIT", false) || isAdmin || isSalesManager
+        canEdit = isAdmin || (isSalesManager && intent.getBooleanExtra("CAN_EDIT", true))
+
+        if (isSalesManager && empId.isNotEmpty()) {
+            db.collection("employees").document(empId).get().addOnSuccessListener { empDoc ->
+                val mgr = empDoc.getString("salesManager") ?: ""
+                val isMyTeam = mgr.isNotBlank() && mgr.trim().equals(loggedInName.trim(), ignoreCase = true)
+                canEdit = isMyTeam
+                if (empId.isNotEmpty() && month.isNotEmpty()) {
+                    loadTableData(empId, month)
+                }
+            }
+        }
 
         // UI Setup
         binding.tvDetailName.text = empName
@@ -75,9 +87,12 @@ class ReportDetailsActivity : AppCompatActivity() {
                 }
 
                 // Table adapter
-                binding.recyclerTable.adapter = TableAdapter(list, canEdit) { item ->
-                    showEditRecordDialog(item)
-                }
+                binding.recyclerTable.adapter = TableAdapter(
+                    list = list,
+                    isEditable = canEdit,
+                    onEditClick = { item -> showEditRecordDialog(item) },
+                    onDeleteClick = { item -> confirmDeleteRecord(item) }
+                )
 
                 // Calculate total limit
                 var totalLimit = 0.0
@@ -114,6 +129,11 @@ class ReportDetailsActivity : AppCompatActivity() {
 
         dialogBinding.btnCancelEditRecord.setOnClickListener {
             dialog.dismiss()
+        }
+
+        dialogBinding.btnDeleteEditRecord.setOnClickListener {
+            dialog.dismiss()
+            confirmDeleteRecord(item)
         }
 
         dialogBinding.btnSaveEditRecord.setOnClickListener {
@@ -153,13 +173,37 @@ class ReportDetailsActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
+    private fun confirmDeleteRecord(item: Performance) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Record")
+            .setMessage("Are you sure you want to delete this performance record for '${item.applicantName}'?")
+            .setPositiveButton("Delete") { _, _ ->
+                if (item.id.isNotEmpty()) {
+                    db.collection("performance").document(item.id)
+                        .delete()
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Record deleted successfully!", Toast.LENGTH_SHORT).show()
+                            loadTableData(empId, month)
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(this, "Failed to delete record: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Toast.makeText(this, "Error: Record ID not found", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     // ==========================================
     // Table Adapter
     // ==========================================
     inner class TableAdapter(
         private val list: List<Performance>,
         private val isEditable: Boolean,
-        private val onEditClick: (Performance) -> Unit
+        private val onEditClick: (Performance) -> Unit,
+        private val onDeleteClick: (Performance) -> Unit
     ) : RecyclerView.Adapter<TableAdapter.TableVH>() {
 
         inner class TableVH(view: View) : RecyclerView.ViewHolder(view) {
@@ -168,6 +212,7 @@ class ReportDetailsActivity : AppCompatActivity() {
             val tvAc: TextView = view.findViewById(R.id.tvAccountNo)
             val tvLimit: TextView = view.findViewById(R.id.tvLimit)
             val ivEdit: ImageView = view.findViewById(R.id.ivEditRow)
+            val ivDelete: ImageView = view.findViewById(R.id.ivDeleteRow)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TableVH {
@@ -199,10 +244,13 @@ class ReportDetailsActivity : AppCompatActivity() {
 
             if (isEditable) {
                 holder.ivEdit.visibility = View.VISIBLE
+                holder.ivDelete.visibility = View.VISIBLE
                 holder.ivEdit.setOnClickListener { onEditClick(item) }
+                holder.ivDelete.setOnClickListener { onDeleteClick(item) }
                 holder.itemView.setOnClickListener { onEditClick(item) }
             } else {
                 holder.ivEdit.visibility = View.GONE
+                holder.ivDelete.visibility = View.GONE
                 holder.itemView.setOnClickListener(null)
             }
 

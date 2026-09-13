@@ -1,12 +1,8 @@
 package com.performance.tracker.data.local
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import com.performance.tracker.model.Performance
 
-@Entity(tableName = "cached_reports")
 data class CachedReportEntity(
-    @PrimaryKey(autoGenerate = true)
     val localId: Long = 0L,
     val firestoreId: String = "",
     val employeeId: String = "",

@@ -82,6 +82,7 @@ class UserDashboardActivity : AppCompatActivity() {
         setupSubmissionUI()  
         setupObservers()
         setupExitNavigation() // ব্যাক বাটন লজিক (Exit Confirmation)
+        setupSyncStatus()
         
         if(empId.isNotEmpty()) {
             viewModel.checkUser(empId)
@@ -92,6 +93,32 @@ class UserDashboardActivity : AppCompatActivity() {
         super.onResume()
         checkSettingsRedDot()
         com.performance.tracker.util.UpdateManager.checkForAppUpdate(this)
+        com.performance.tracker.util.OfflineSyncManager.syncPendingReports(this, showIndicator = false)
+    }
+
+    private fun setupSyncStatus() {
+        binding.btnUserSyncStatus.setOnClickListener {
+            binding.ivUserSyncIcon.animate().rotationBy(360f).setDuration(600).start()
+            com.performance.tracker.util.OfflineSyncManager.performFullSync(this, showIndicator = true)
+        }
+
+        com.performance.tracker.util.OfflineSyncManager.syncState.observe(this) { state ->
+            when (state) {
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Syncing -> {
+                    binding.ivUserSyncIcon.setColorFilter(android.graphics.Color.parseColor("#3B82F6"))
+                    binding.ivUserSyncIcon.animate().rotationBy(180f).setDuration(400).start()
+                }
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Synced -> {
+                    binding.ivUserSyncIcon.setColorFilter(android.graphics.Color.parseColor("#15803D"))
+                }
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Error -> {
+                    binding.ivUserSyncIcon.setColorFilter(android.graphics.Color.parseColor("#DC2626"))
+                }
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Idle -> {
+                    binding.ivUserSyncIcon.setColorFilter(android.graphics.Color.parseColor("#15803D"))
+                }
+            }
+        }
     }
 
     private fun checkSettingsRedDot() {
@@ -204,60 +231,80 @@ class UserDashboardActivity : AppCompatActivity() {
         Toast.makeText(this, "Loading Live Ranking...", Toast.LENGTH_SHORT).show()
         val db = FirebaseFirestore.getInstance()
         
-        db.collection("performance").get().addOnSuccessListener { snapshot ->
-            val allPerformances = snapshot.toObjects(Performance::class.java)
-            val officerMap = allPerformances.groupBy { it.employeeName.trim() }
-            val rawRanked = officerMap.map { (_, reports) ->
-                val sample = reports.first()
-                val totalCards = reports.size
-                Pair(sample, totalCards)
-            }.sortedByDescending { it.second }
-
-            val rankedList = rawRanked.mapIndexed { index, pair ->
-                AdminDashboardActivity.ModernRankingEntry(
-                    rank = index + 1,
-                    employeeId = pair.first.employeeId,
-                    employeeName = pair.first.employeeName,
-                    branch = pair.first.branch,
-                    zone = pair.first.zone,
-                    score = pair.second
-                )
+        db.collection("employees").get().addOnSuccessListener { empSnapshot ->
+            val allEmployees = empSnapshot.documents.mapNotNull { doc ->
+                val u = doc.toObject(User::class.java)
+                if (u != null) {
+                    val effective = if (u.employeeId.isBlank()) u.copy(employeeId = doc.id) else u
+                    val isApproved = effective.status.isBlank() ||
+                                     effective.status.trim().equals("Approved", ignoreCase = true)
+                    val isOfficer = effective.role.isBlank() || effective.role.trim().equals("USER", ignoreCase = true)
+                    if (isApproved && isOfficer) effective else null
+                } else null
             }
 
-            val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
-            val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_ranking, null)
-            dialog.setContentView(dialogView)
+            db.collection("performance").get().addOnSuccessListener { snapshot ->
+                val allPerformances = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Performance::class.java)?.apply { id = doc.id }
+                }
 
-            dialog.window?.apply {
-                setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
-            }
+                val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
 
-            val btnClose = dialogView.findViewById<ImageButton>(R.id.btnRankingClose)
-            val tvTotalRankedCount = dialogView.findViewById<TextView>(R.id.tvTotalRankedCount)
-            val tvPodiumRank1Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank1Name)
-            val tvPodiumRank1Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank1Score)
-            val tvPodiumRank2Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank2Name)
-            val tvPodiumRank2Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank2Score)
-            val tvPodiumRank3Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank3Name)
-            val tvPodiumRank3Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank3Score)
-            
-            val cardMyRank = dialogView.findViewById<MaterialCardView>(R.id.cardMyRankHighlight)
-            val tvMyRankBadge = dialogView.findViewById<TextView>(R.id.tvMyRankBadge)
-            val tvMyRankName = dialogView.findViewById<TextView>(R.id.tvMyRankName)
-            val tvMyRankDetails = dialogView.findViewById<TextView>(R.id.tvMyRankDetails)
-            val tvMyRankScore = dialogView.findViewById<TextView>(R.id.tvMyRankScore)
+                val rawRanked = allEmployees.map { emp ->
+                    val count = TargetUtils.countCards(allPerformances, emp.employeeId, currentMonth)
+                    Pair(emp, count)
+                }.sortedWith(compareByDescending<Pair<User, Int>> { it.second }.thenBy { it.first.name })
 
-            val etSearch = dialogView.findViewById<EditText>(R.id.etRankingSearch)
-            val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearRankingSearch)
-            val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenRanking)
-            val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutRankingEmpty)
+                val rankedList = rawRanked.mapIndexed { index, pair ->
+                    AdminDashboardActivity.ModernRankingEntry(
+                        rank = index + 1,
+                        employeeId = pair.first.employeeId,
+                        employeeName = pair.first.name,
+                        branch = pair.first.branch,
+                        zone = pair.first.zone,
+                        score = pair.second
+                    )
+                }
 
-            btnClose.setOnClickListener { dialog.dismiss() }
-            tvTotalRankedCount.text = "${rankedList.size} Officers"
+                val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
+                val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_ranking, null)
+                dialog.setContentView(dialogView)
 
-            // Highlights for User
-            val myRankIndex = rankedList.indexOfFirst { it.employeeName.equals(empName, ignoreCase = true) }
+                dialog.window?.apply {
+                    setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    setBackgroundDrawable(ColorDrawable(Color.parseColor("#F8FAFC")))
+                }
+
+                val btnClose = dialogView.findViewById<ImageButton>(R.id.btnRankingClose)
+                val tvTotalRankedCount = dialogView.findViewById<TextView>(R.id.tvTotalRankedCount)
+                val tvPodiumRank1Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank1Name)
+                val tvPodiumRank1Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank1Score)
+                val tvPodiumRank2Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank2Name)
+                val tvPodiumRank2Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank2Score)
+                val tvPodiumRank3Name = dialogView.findViewById<TextView>(R.id.tvPodiumRank3Name)
+                val tvPodiumRank3Score = dialogView.findViewById<TextView>(R.id.tvPodiumRank3Score)
+                
+                val cardMyRank = dialogView.findViewById<MaterialCardView>(R.id.cardMyRankHighlight)
+                val tvMyRankBadge = dialogView.findViewById<TextView>(R.id.tvMyRankBadge)
+                val tvMyRankName = dialogView.findViewById<TextView>(R.id.tvMyRankName)
+                val tvMyRankDetails = dialogView.findViewById<TextView>(R.id.tvMyRankDetails)
+                val tvMyRankScore = dialogView.findViewById<TextView>(R.id.tvMyRankScore)
+
+                val etSearch = dialogView.findViewById<EditText>(R.id.etRankingSearch)
+                val btnClearSearch = dialogView.findViewById<ImageButton>(R.id.btnClearRankingSearch)
+                val recycler = dialogView.findViewById<RecyclerView>(R.id.recyclerFullscreenRanking)
+                val layoutEmpty = dialogView.findViewById<LinearLayout>(R.id.layoutRankingEmpty)
+
+                btnClose.setOnClickListener { dialog.dismiss() }
+                tvTotalRankedCount.text = "${rankedList.size} Officers"
+
+                // Highlights for User
+                val cleanEmpId = empId.trim()
+                val cleanEmpName = empName.trim()
+                val myRankIndex = rankedList.indexOfFirst { 
+                    it.employeeId.trim().equals(cleanEmpId, ignoreCase = true) || 
+                    it.employeeName.trim().equals(cleanEmpName, ignoreCase = true) 
+                }
             if (myRankIndex != -1) {
                 val myRank = rankedList[myRankIndex]
                 cardMyRank.visibility = View.VISIBLE
@@ -314,8 +361,11 @@ class UserDashboardActivity : AppCompatActivity() {
 
             btnClearSearch.setOnClickListener { etSearch.setText("") }
             dialog.show()
+            }.addOnFailureListener {
+                Toast.makeText(this, "Failed to load performance data", Toast.LENGTH_SHORT).show()
+            }
         }.addOnFailureListener {
-            Toast.makeText(this, "Failed to load ranking", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Failed to load officers list", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -530,12 +580,14 @@ class UserDashboardActivity : AppCompatActivity() {
 
         val summary = buildString {
             append("PDF Data Processed Successfully!\n\n")
-            append("Total Accounts Found: ${accounts.size}\n\n")
+            append("Filter Applied: Only 906 Accounts Imported\n")
+            append("Total 906 Accounts Found: ${accounts.size}\n\n")
             append("Monthly Breakdown (Based on Period):\n")
             importedPdfAccountsByMonth.forEach { (m, list) ->
                 append("• $m: ${list.size} accounts\n")
             }
-            append("\nAccounts for '$targetMonth' are now filled into the input fields.")
+            append("\n✓ Double entry protection active: Duplicate accounts per month filtered automatically.\n")
+            append("\nAccounts for '$targetMonth' are filled into the input fields.")
             if (importedPdfAccountsByMonth.size > 1) {
                 append(" You can change the 'Reporting Month' dropdown to view or edit accounts for other months.")
             }

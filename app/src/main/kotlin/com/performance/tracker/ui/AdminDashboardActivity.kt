@@ -36,6 +36,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -77,9 +78,18 @@ class AdminDashboardActivity : AppCompatActivity() {
     
     private val db = FirebaseFirestore.getInstance()
     private var allReports: List<Performance> = ArrayList()
+    private var allRawReports: List<Performance> = ArrayList()
 
     private val monthsList = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
     private val shortMonthsList = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+    private fun getMonthIndex(monthStr: String): Int {
+        val clean = monthStr.trim()
+        val idx = monthsList.indexOfFirst {
+            it.equals(clean, ignoreCase = true) || clean.startsWith(it, ignoreCase = true) || clean.contains(it, ignoreCase = true)
+        }
+        return if (idx >= 0) idx else 999
+    }
 
     private var userRole = "ADMIN"
     private var userName = ""
@@ -105,6 +115,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         
         loadDashboardData()
         checkNotificationPermission()
+        setupSyncStatus()
         
         binding.btnRefresh.setOnClickListener {
             Toast.makeText(this, "Refreshing data...", Toast.LENGTH_SHORT).show()
@@ -125,26 +136,33 @@ class AdminDashboardActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         checkSettingsRedDot()
-        checkPendingApprovalsBadge()
         com.performance.tracker.util.UpdateManager.checkForAppUpdate(this)
+        com.performance.tracker.util.OfflineSyncManager.syncPendingReports(this, showIndicator = false)
     }
 
-    private fun checkPendingApprovalsBadge() {
-        db.collection("employees")
-            .whereEqualTo("status", "Pending")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val count = snapshot.size()
-                if (count > 0) {
-                    binding.btnApproval.text = "Approval ($count)"
-                    binding.btnApproval.setBackgroundColor(Color.parseColor("#FEE2E2"))
-                    binding.btnApproval.setTextColor(Color.parseColor("#DC2626"))
-                } else {
-                    binding.btnApproval.text = "Approval List"
-                    binding.btnApproval.setBackgroundColor(Color.parseColor("#DCFCE7"))
-                    binding.btnApproval.setTextColor(Color.parseColor("#15803D"))
+    private fun setupSyncStatus() {
+        binding.btnAdminSyncStatus.setOnClickListener {
+            binding.ivAdminSyncIcon.animate().rotationBy(360f).setDuration(600).start()
+            com.performance.tracker.util.OfflineSyncManager.performFullSync(this, showIndicator = true)
+        }
+
+        com.performance.tracker.util.OfflineSyncManager.syncState.observe(this) { state ->
+            when (state) {
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Syncing -> {
+                    binding.ivAdminSyncIcon.setColorFilter(Color.parseColor("#3B82F6"))
+                    binding.ivAdminSyncIcon.animate().rotationBy(180f).setDuration(400).start()
+                }
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Synced -> {
+                    binding.ivAdminSyncIcon.setColorFilter(Color.parseColor("#15803D"))
+                }
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Error -> {
+                    binding.ivAdminSyncIcon.setColorFilter(Color.parseColor("#DC2626"))
+                }
+                is com.performance.tracker.util.OfflineSyncManager.SyncState.Idle -> {
+                    binding.ivAdminSyncIcon.setColorFilter(Color.parseColor("#15803D"))
                 }
             }
+        }
     }
 
     private fun checkSettingsRedDot() {
@@ -175,14 +193,23 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     private fun loadDashboardData() {
         binding.progressBar.visibility = View.VISIBLE
+        fetchTargetsCache()
         viewModel.getAllReports()
         viewModel.reportList.observe(this) { list ->
             binding.progressBar.visibility = View.GONE
             if (list != null && list.isNotEmpty()) {
-                allReports = if (userRole.equals("Sales Manager", ignoreCase = true)) {
-                    list.filter { it.salesManager.equals(userName, ignoreCase = true) }
+                allRawReports = list
+                com.performance.tracker.util.OfflineSyncManager.cacheFirestoreReports(this@AdminDashboardActivity, list, notifyUser = false)
+                val cleanRole = userRole.trim()
+                val isSalesManager = cleanRole.equals("Sales Manager", ignoreCase = true)
+                
+                if (isSalesManager) {
+                    allReports = list.filter { 
+                        it.salesManager.trim().equals(userName.trim(), ignoreCase = true) 
+                    }
                 } else {
-                    list 
+                    // AGM, DGM, ADMIN and all management accounts load ALL reports automatically
+                    allReports = list
                 }
 
                 if (allReports.isNotEmpty()) {
@@ -210,7 +237,10 @@ class AdminDashboardActivity : AppCompatActivity() {
             val first = performances.first()
             val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
             ReportSummary(first.employeeId, first.employeeName, first.branch, first.month, first.timestamp, actualCount)
-        }
+        }.sortedWith(
+            compareBy<ReportSummary> { getMonthIndex(it.month) }
+                .thenBy { it.employeeName }
+        )
         adapter.updateList(groupedList)
         
         val count = groupedList.size
@@ -225,10 +255,12 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        val isAdmin = userRole.equals("ADMIN", ignoreCase = true)
-        val isSalesManager = userRole.equals("Sales Manager", ignoreCase = true)
-        val canEdit = isAdmin || isSalesManager
-        val canDelete = isAdmin
+        val cleanRole = userRole.trim()
+        val isAdmin = cleanRole.equals("ADMIN", ignoreCase = true)
+        val isAgmOrDgm = cleanRole.equals("AGM", ignoreCase = true) || cleanRole.equals("DGM", ignoreCase = true)
+        val isSalesManager = cleanRole.equals("Sales Manager", ignoreCase = true)
+        val canEdit = isAdmin || isAgmOrDgm || isSalesManager
+        val canDelete = isAdmin || isAgmOrDgm
 
         adapter = ReportAdapter(
             emptyList(),
@@ -333,11 +365,6 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
 
         binding.btnOfficerList.setOnClickListener { startActivity(Intent(this, OfficerListActivity::class.java)) }
-        binding.btnApproval.setOnClickListener { startActivity(Intent(this, ApprovalActivity::class.java)) }
-
-        binding.btnManageTargets.setOnClickListener { showTargetManagementDialog() }
-        binding.btnAdminQuickManageTargets.setOnClickListener { showTargetManagementDialog() }
-        binding.cardAdminTargetOverview.setOnClickListener { showTargetManagementDialog() }
     }
 
     // ========================================================
@@ -377,10 +404,11 @@ class AdminDashboardActivity : AppCompatActivity() {
             binding.progressBar.visibility = View.GONE
             val allEmployees = snapshot.toObjects(User::class.java)
             
-            // শুধু Approved এবং USER রোলধারী এমপ্লয়িদের ফিল্টার করা (Case Insensitive)
+            val isSalesManager = userRole.trim().equals("Sales Manager", ignoreCase = true)
             val approvedUsers = allEmployees.filter { 
                 it.role.equals("USER", ignoreCase = true) && 
-                it.status.equals("Approved", ignoreCase = true) 
+                (it.status.isBlank() || it.status.equals("Approved", ignoreCase = true)) &&
+                (!isSalesManager || it.salesManager.trim().equals(userName.trim(), ignoreCase = true))
             }
             
             // যারা ওই মাসে অন্তত একটি রিপোর্ট (NIL বা আসল) জমা দিয়েছে তাদের আইডি
@@ -553,6 +581,28 @@ class AdminDashboardActivity : AppCompatActivity() {
     // 🔥 OpenPDF, Kotlin-CSV & Standard XLSX: Performance Report Exports
     // ========================================================
     private val cachedOfficerYearlyTargets = mutableMapOf<String, Int>()
+    private val cachedOfficerMonthlyTargets = mutableMapOf<String, Int>()
+    private val cachedEmployeesList = mutableListOf<com.performance.tracker.model.User>()
+
+    private fun fetchTargetsCache() {
+        db.collection("employees").get().addOnSuccessListener { snapshot ->
+            cachedEmployeesList.clear()
+            val users = snapshot.toObjects(com.performance.tracker.model.User::class.java)
+            cachedEmployeesList.addAll(users)
+            snapshot.documents.forEach { doc ->
+                val empId = doc.getString("employeeId") ?: ""
+                val monthly = doc.getLong("monthlyTarget")?.toInt() ?: 0
+                val yearly = doc.getLong("yearlyTarget")?.toInt() ?: 0
+                val calculatedYearly = if (yearly > 0) yearly else if (monthly > 0) monthly * 12 else 0
+                if (empId.isNotBlank() && monthly > 0) {
+                    cachedOfficerMonthlyTargets[empId] = monthly
+                }
+                if (empId.isNotBlank() && calculatedYearly > 0) {
+                    cachedOfficerYearlyTargets[empId] = calculatedYearly
+                }
+            }
+        }
+    }
 
     private fun showExportDialog(defaultFormatIsPdf: Boolean) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_export_report, null)
@@ -563,30 +613,39 @@ class AdminDashboardActivity : AppCompatActivity() {
         val layoutMonthSpinners = dialogView.findViewById<View>(R.id.layoutMonthSpinners)
         val btnDownload = dialogView.findViewById<Button>(R.id.btnDownloadReport)
         val btnShare = dialogView.findViewById<Button>(R.id.btnShareReport)
+        val btnPreview = dialogView.findViewById<Button>(R.id.btnPreviewReport)
         val tvTitle = dialogView.findViewById<TextView>(R.id.tvExportTitle)
         val layoutFormatSelection = dialogView.findViewById<View>(R.id.layoutFormatSelection)
         val layoutPdfContentOptions = dialogView.findViewById<View>(R.id.layoutPdfContentOptions)
         val layoutExcelContentOptions = dialogView.findViewById<View>(R.id.layoutExcelContentOptions)
         val rbSummary = dialogView.findViewById<RadioButton>(R.id.rbSummary)
+        val rbSalesManagerReport = dialogView.findViewById<RadioButton>(R.id.rbSalesManagerReport)
+        val rbDetails = dialogView.findViewById<RadioButton>(R.id.rbDetails)
+        val layoutPdfColumns = dialogView.findViewById<View>(R.id.layoutPdfColumns)
+        val cbPdfZone = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbPdfZone)
+        val cbPdfSalesManager = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbPdfSalesManager)
+        val rbExcelOfficerPerformance = dialogView.findViewById<RadioButton>(R.id.rbExcelOfficerPerformance)
+        val rbExcelSalesManagerReport = dialogView.findViewById<RadioButton>(R.id.rbExcelSalesManagerReport)
         val cbExcelZone = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbExcelZone)
         val cbExcelSalesManager = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbExcelSalesManager)
         val cbExcelApplicantDetails = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbExcelApplicantDetails)
 
+        // Initialize visibility based on default checked state
+        if (rbSalesManagerReport?.isChecked == true) {
+            layoutPdfColumns?.visibility = View.GONE
+            cbPdfZone?.visibility = View.GONE
+            cbPdfSalesManager?.visibility = View.GONE
+        }
+        if (rbExcelSalesManagerReport?.isChecked == true) {
+            cbExcelZone?.visibility = View.GONE
+            cbExcelSalesManager?.visibility = View.GONE
+        }
+
         // Always hide format selection radio group as per requirement
         layoutFormatSelection.visibility = View.GONE
 
-        // Refresh targets from Firestore cache (yearly target prioritized, or monthly target * 12)
-        db.collection("employees").get().addOnSuccessListener { snapshot ->
-            snapshot.documents.forEach { doc ->
-                val empId = doc.getString("employeeId") ?: ""
-                val monthly = doc.getLong("monthlyTarget")?.toInt() ?: 0
-                val yearly = doc.getLong("yearlyTarget")?.toInt() ?: 0
-                val calculatedYearly = if (yearly > 0) yearly else if (monthly > 0) monthly * 12 else 0
-                if (empId.isNotBlank() && calculatedYearly > 0) {
-                    cachedOfficerYearlyTargets[empId] = calculatedYearly
-                }
-            }
-        }
+        // Refresh targets from Firestore cache
+        fetchTargetsCache()
 
         if (defaultFormatIsPdf) {
             tvTitle.text = "Monthly Performance Report (PDF)"
@@ -622,14 +681,17 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
 
         fun getSelectedData(): List<Performance> {
+            val isSmSelected = (defaultFormatIsPdf && rbSalesManagerReport?.isChecked == true) ||
+                                (!defaultFormatIsPdf && rbExcelSalesManagerReport?.isChecked == true)
+            val base = if (isSmSelected && allRawReports.isNotEmpty()) allRawReports else allReports
             return if (cbAllMonths.isChecked) {
-                allReports
+                base
             } else {
                 val fromIdx = spinnerFrom.selectedItemPosition
                 val toIdx = spinnerTo.selectedItemPosition
                 if (fromIdx in monthsList.indices && toIdx in monthsList.indices && fromIdx <= toIdx) {
                     val selected = monthsList.subList(fromIdx, toIdx + 1)
-                    allReports.filter { r ->
+                    base.filter { r ->
                         selected.any { sm -> sm.equals(r.month.trim(), ignoreCase = true) || r.month.contains(sm, ignoreCase = true) }
                     }
                 } else emptyList()
@@ -645,6 +707,42 @@ class AdminDashboardActivity : AppCompatActivity() {
                 tvRecordCount.text = "✓ Found ${matching.size} records ready to export"
                 tvRecordCount.setTextColor(Color.parseColor("#2E7D32"))
             }
+        }
+
+        rbSalesManagerReport?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                layoutPdfColumns?.visibility = View.GONE
+                cbPdfSalesManager?.visibility = View.GONE
+                cbPdfZone?.visibility = View.GONE
+            }
+            updateLiveRecordCount()
+        }
+        rbSummary?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                layoutPdfColumns?.visibility = View.VISIBLE
+                cbPdfSalesManager?.visibility = View.VISIBLE
+                cbPdfZone?.visibility = View.VISIBLE
+            }
+            updateLiveRecordCount()
+        }
+        rbDetails?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) layoutPdfColumns?.visibility = View.GONE
+            updateLiveRecordCount()
+        }
+
+        rbExcelSalesManagerReport?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                cbExcelSalesManager?.visibility = View.GONE
+                cbExcelZone?.visibility = View.GONE
+            }
+            updateLiveRecordCount()
+        }
+        rbExcelOfficerPerformance?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                cbExcelSalesManager?.visibility = View.VISIBLE
+                cbExcelZone?.visibility = View.VISIBLE
+            }
+            updateLiveRecordCount()
         }
 
         cbAllMonths.setOnCheckedChangeListener { _, isChecked ->
@@ -684,10 +782,15 @@ class AdminDashboardActivity : AppCompatActivity() {
 
                 dialog.dismiss()
 
+                val isSalesManagerPdf = defaultFormatIsPdf && (rbSalesManagerReport?.isChecked == true)
+                val isSalesManagerExcel = !defaultFormatIsPdf && (rbExcelSalesManagerReport?.isChecked == true)
+                val isSalesManagerMode = isSalesManagerPdf || isSalesManagerExcel
+                val baseData = if (isSalesManagerMode && allRawReports.isNotEmpty()) allRawReports else allReports
+
                 val filteredData = if (isAll) {
-                    allReports
+                    baseData
                 } else {
-                    allReports.filter { r ->
+                    baseData.filter { r ->
                         selectedMonths.any { sm -> sm.equals(r.month.trim(), ignoreCase = true) || r.month.contains(sm, ignoreCase = true) }
                     }
                 }
@@ -697,26 +800,45 @@ class AdminDashboardActivity : AppCompatActivity() {
                 } else {
                     val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
                     val monthRange = if (isAll) "All Months $year" else if (fromMonth == toMonth) "$fromMonth $year" else "$fromMonth to $toMonth $year"
+                    val monthCount = if (isAll) 12 else (toIdx - fromIdx + 1).coerceAtLeast(1)
 
                     if (defaultFormatIsPdf) {
+                        val includePdfDetails = rbDetails?.isChecked == true
+                        val pdfIncludeZone = if (isSalesManagerPdf) false else (cbPdfZone?.isChecked ?: true)
+                        val pdfIncludeSalesManager = if (isSalesManagerPdf) false else (cbPdfSalesManager?.isChecked ?: false)
                         ReportExporter.generateMonthlyPdf(
                             context = this,
                             data = filteredData,
                             monthRange = monthRange,
-                            managerName = if (userRole.equals("Sales Manager", ignoreCase = true)) userName else "",
+                            managerName = if (isSalesManagerPdf) "" else if (userRole.equals("Sales Manager", ignoreCase = true)) userName else "",
                             isSummary = isPdfSummary,
-                            isShare = isShare
+                            isShare = isShare,
+                            officerMonthlyTargets = cachedOfficerMonthlyTargets,
+                            officerYearlyTargets = cachedOfficerYearlyTargets,
+                            monthCount = monthCount,
+                            includeDetails = includePdfDetails,
+                            includeZone = pdfIncludeZone,
+                            includeSalesManager = pdfIncludeSalesManager,
+                            isSalesManagerReport = isSalesManagerPdf,
+                            allEmployees = cachedEmployeesList
                         )
                     } else {
+                        val excelIncludeZone = if (isSalesManagerExcel) false else cbExcelZone.isChecked
+                        val excelIncludeSalesManager = if (isSalesManagerExcel) false else includeSalesManager
                         ReportExporter.exportPerformanceXlsx(
                             context = this,
                             data = filteredData,
                             monthRange = monthRange,
-                            officerTargets = cachedOfficerYearlyTargets,
-                            includeZone = includeZone,
-                            includeSalesManager = includeSalesManager,
+                            officerTargets = cachedOfficerMonthlyTargets,
+                            officerYearlyTargets = cachedOfficerYearlyTargets,
+                            includeZone = excelIncludeZone,
+                            includeSalesManager = excelIncludeSalesManager,
                             includeApplicantDetails = includeApplicantDetails,
-                            isShare = isShare
+                            isShare = isShare,
+                            isSalesManagerReport = isSalesManagerExcel,
+                            monthCount = monthCount,
+                            allEmployees = cachedEmployeesList,
+                            managerName = if (isSalesManagerExcel) "" else if (userRole.equals("Sales Manager", ignoreCase = true)) userName else ""
                         )
                     }
                 }
@@ -725,6 +847,65 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         btnDownload.setOnClickListener { handleExport(false) }
         btnShare.setOnClickListener { handleExport(true) }
+
+        btnPreview?.setOnClickListener {
+            val isAll = cbAllMonths.isChecked
+            val fromMonth = spinnerFrom.selectedItem.toString()
+            val toMonth = spinnerTo.selectedItem.toString()
+            val fromIdx = spinnerFrom.selectedItemPosition
+            val toIdx = spinnerTo.selectedItemPosition
+
+            if (!isAll && fromIdx > toIdx) {
+                Toast.makeText(this, "Invalid Range: 'From Month' cannot be after 'To Month'", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            val selectedMonths = if (isAll) monthsList else monthsList.subList(fromIdx, toIdx + 1)
+            val isPdfSummary = rbSummary.isChecked
+            val isSalesManagerPdf = defaultFormatIsPdf && (rbSalesManagerReport?.isChecked == true)
+            val isSalesManagerExcel = !defaultFormatIsPdf && (rbExcelSalesManagerReport?.isChecked == true)
+            val isSalesManagerMode = isSalesManagerPdf || isSalesManagerExcel
+            val baseData = if (isSalesManagerMode && allRawReports.isNotEmpty()) allRawReports else allReports
+
+            val filteredData = if (isAll) {
+                baseData
+            } else {
+                baseData.filter { r ->
+                    selectedMonths.any { sm -> sm.equals(r.month.trim(), ignoreCase = true) || r.month.contains(sm, ignoreCase = true) }
+                }
+            }
+
+            if (filteredData.isEmpty()) {
+                Toast.makeText(this, "No records found for the selected period", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val year = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
+            val monthRange = if (isAll) "All Months $year" else if (fromMonth == toMonth) "$fromMonth $year" else "$fromMonth to $toMonth $year"
+            val monthCount = if (isAll) 12 else (toIdx - fromIdx + 1).coerceAtLeast(1)
+
+            val includePdfDetails = rbDetails?.isChecked == true
+            val pdfIncludeZone = if (isSalesManagerPdf) false else (cbPdfZone?.isChecked ?: true)
+            val pdfIncludeSalesManager = if (isSalesManagerPdf) false else (cbPdfSalesManager?.isChecked ?: false)
+
+            ReportPreviewActivity.previewDataHolder = filteredData
+            ReportPreviewActivity.previewEmployeesHolder = cachedEmployeesList
+            ReportPreviewActivity.previewMonthlyTargets = cachedOfficerMonthlyTargets
+            ReportPreviewActivity.previewYearlyTargets = cachedOfficerYearlyTargets
+
+            val previewIntent = Intent(this, ReportPreviewActivity::class.java).apply {
+                putExtra(ReportPreviewActivity.EXTRA_MONTH_RANGE, monthRange)
+                putExtra(ReportPreviewActivity.EXTRA_MANAGER_NAME, if (isSalesManagerPdf) "" else if (userRole.equals("Sales Manager", ignoreCase = true)) userName else "")
+                putExtra(ReportPreviewActivity.EXTRA_IS_SUMMARY, isPdfSummary)
+                putExtra(ReportPreviewActivity.EXTRA_IS_SALES_MANAGER_REPORT, isSalesManagerPdf)
+                putExtra(ReportPreviewActivity.EXTRA_INCLUDE_DETAILS, includePdfDetails)
+                putExtra(ReportPreviewActivity.EXTRA_INCLUDE_ZONE, pdfIncludeZone)
+                putExtra(ReportPreviewActivity.EXTRA_INCLUDE_SALES_MANAGER, pdfIncludeSalesManager)
+                putExtra(ReportPreviewActivity.EXTRA_MONTH_COUNT, monthCount)
+            }
+
+            startActivity(previewIntent)
+        }
 
         dialog.show()
     }
@@ -758,7 +939,7 @@ class AdminDashboardActivity : AppCompatActivity() {
             val first = performances.first()
             val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
             ReportSummary(first.employeeId, first.employeeName, first.branch, first.month, first.timestamp, actualCount)
-        }
+        }.sortedBy { getMonthIndex(it.month) }
         adapter.updateList(groupedList)
         
         val count = groupedList.size
@@ -817,8 +998,9 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         btnClose.setOnClickListener { dialog.dismiss() }
 
-        // Group and rank all officers
-        val officerReportsMap = allReports.groupBy { it.employeeName.trim() }
+        // Group and rank all officers across all reports
+        val reportsToRank = viewModel.reportList.value?.ifEmpty { allReports } ?: allReports
+        val officerReportsMap = reportsToRank.groupBy { it.employeeName.trim() }
         val rawRanked = officerReportsMap.map { (_, reports) ->
             val sample = reports.first()
             val totalCards = reports.size
@@ -912,13 +1094,16 @@ class AdminDashboardActivity : AppCompatActivity() {
         tvSubtitle.text = "Select a manager to view team members and performance"
         btnClose.setOnClickListener { dialog.dismiss() }
 
-        val managerGroups = allReports.filter { it.salesManager.isNotBlank() }
-            .groupBy { it.salesManager.trim() }
+        val reportsSource = if (allRawReports.isNotEmpty()) allRawReports else allReports
+        val managerGroups = reportsSource.filter { 
+            it.salesManager.isNotBlank() && 
+            !it.salesManager.equals("N/A", ignoreCase = true)
+        }.groupBy { it.salesManager.trim() }
 
         val categoryList = managerGroups.map { (managerName, reports) ->
             val officers = reports.distinctBy { it.employeeId }
             val totalCards = reports.size
-            val branches = officers.map { it.branch }.filter { it.isNotBlank() }.distinct().take(3).joinToString(", ")
+            val branches = officers.map { it.branch }.filter { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }.distinct().take(3).joinToString(", ")
             val branchText = if (branches.isNotBlank()) " • $branches" else ""
             ModernCategoryEntry(
                 name = managerName,
@@ -932,13 +1117,26 @@ class AdminDashboardActivity : AppCompatActivity() {
         tvItemCount.text = "${categoryList.size} Managers"
 
         val adapter = FullscreenCategoryAdapter(categoryList) { selectedCategory ->
-            val empUnderManager = allReports.filter { it.salesManager.equals(selectedCategory.name, ignoreCase = true) }
+            val empUnderManager = reportsSource.filter { it.salesManager.equals(selectedCategory.name, ignoreCase = true) }
                 .distinctBy { it.employeeId }
-            showEmployeeListDialog(
-                title = "Team: ${selectedCategory.name}",
-                subtitle = "Total ${empUnderManager.size} active officers under this manager",
-                employeeList = empUnderManager
-            )
+
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Team: ${selectedCategory.name}")
+                .setMessage("Choose an action for Manager ${selectedCategory.name}:")
+                .setPositiveButton("View Officers (${empUnderManager.size})") { _, _ ->
+                    showEmployeeListDialog(
+                        title = "Team: ${selectedCategory.name}",
+                        subtitle = "Total ${empUnderManager.size} active officers under this manager",
+                        employeeList = empUnderManager,
+                        parentDialog = dialog
+                    )
+                }
+                .setNeutralButton("Filter Main Dashboard") { _, _ ->
+                    dialog.dismiss()
+                    filterDashboardByManager(selectedCategory.name)
+                }
+                .setNegativeButton("Cancel") { dialogInterface, _ -> dialogInterface.dismiss() }
+                .show()
         }
 
         recycler.layoutManager = LinearLayoutManager(this)
@@ -992,13 +1190,13 @@ class AdminDashboardActivity : AppCompatActivity() {
         tvSubtitle.text = "Select a regional zone to inspect branch performance"
         btnClose.setOnClickListener { dialog.dismiss() }
 
-        val zoneGroups = allReports.filter { it.zone.isNotBlank() }
+        val zoneGroups = allReports.filter { it.zone.isNotBlank() && !it.zone.equals("N/A", ignoreCase = true) }
             .groupBy { it.zone.trim() }
 
         val categoryList = zoneGroups.map { (zoneName, reports) ->
             val officers = reports.distinctBy { it.employeeId }
             val totalCards = reports.size
-            val branches = officers.map { it.branch }.filter { it.isNotBlank() }.distinct().take(3).joinToString(", ")
+            val branches = officers.map { it.branch }.filter { it.isNotBlank() && !it.equals("N/A", ignoreCase = true) }.distinct().take(3).joinToString(", ")
             val branchText = if (branches.isNotBlank()) " • $branches" else ""
             ModernCategoryEntry(
                 name = zoneName,
@@ -1014,11 +1212,24 @@ class AdminDashboardActivity : AppCompatActivity() {
         val adapter = FullscreenCategoryAdapter(categoryList) { selectedCategory ->
             val empInZone = allReports.filter { it.zone.equals(selectedCategory.name, ignoreCase = true) }
                 .distinctBy { it.employeeId }
-            showEmployeeListDialog(
-                title = "Zone: ${selectedCategory.name}",
-                subtitle = "Total ${empInZone.size} officers operating in this zone",
-                employeeList = empInZone
-            )
+
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Zone: ${selectedCategory.name}")
+                .setMessage("Choose an action for Zone ${selectedCategory.name}:")
+                .setPositiveButton("View Officers (${empInZone.size})") { _, _ ->
+                    showEmployeeListDialog(
+                        title = "Zone: ${selectedCategory.name}",
+                        subtitle = "Total ${empInZone.size} officers operating in this zone",
+                        employeeList = empInZone,
+                        parentDialog = dialog
+                    )
+                }
+                .setNeutralButton("Filter Main Dashboard") { _, _ ->
+                    dialog.dismiss()
+                    filterDashboardByZone(selectedCategory.name)
+                }
+                .setNegativeButton("Cancel") { dialogInterface, _ -> dialogInterface.dismiss() }
+                .show()
         }
 
         recycler.layoutManager = LinearLayoutManager(this)
@@ -1056,7 +1267,8 @@ class AdminDashboardActivity : AppCompatActivity() {
     private fun showEmployeeListDialog(
         title: String,
         subtitle: String = "Select an officer to view full performance analytics",
-        employeeList: List<Performance>
+        employeeList: List<Performance>,
+        parentDialog: Dialog? = null
     ) {
         val dialog = Dialog(this, R.style.Theme_FullScreenDialog)
         val dialogView = layoutInflater.inflate(R.layout.dialog_fullscreen_filter, null)
@@ -1096,6 +1308,7 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         val adapter = FullscreenOfficerAdapter(officerList) { selectedOfficer ->
             dialog.dismiss()
+            parentDialog?.dismiss()
             filterDashboardByEmployee(selectedOfficer.employeeId, selectedOfficer.name)
         }
 
@@ -1128,6 +1341,52 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         btnClearSearch.setOnClickListener { etSearch.setText("") }
         dialog.show()
+    }
+
+    private fun filterDashboardByZone(zoneName: String) {
+        val filtered = allReports.filter { it.zone.equals(zoneName, ignoreCase = true) }
+        val groupedList = filtered.groupBy { it.employeeId + "_" + it.month }.map { (_, performances) ->
+            val first = performances.first()
+            val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
+            ReportSummary(first.employeeId, first.employeeName, first.branch, first.month, first.timestamp, actualCount)
+        }.sortedWith(
+            compareBy<ReportSummary> { getMonthIndex(it.month) }
+                .thenBy { it.employeeName }
+        )
+        adapter.updateList(groupedList)
+
+        val count = groupedList.size
+        if (count == 0) {
+            binding.tvFilterStatus.text = "Viewing Zone: $zoneName (0 Officers)"
+            binding.tvFilterStatus.setTextColor(Color.RED)
+        } else {
+            val cardText = if (count == 1) "1 Officer record" else "$count Officer records"
+            binding.tvFilterStatus.text = "Viewing Zone: $zoneName ($cardText)"
+            binding.tvFilterStatus.setTextColor(Color.parseColor("#3F51B5"))
+        }
+    }
+
+    private fun filterDashboardByManager(managerName: String) {
+        val filtered = allReports.filter { it.salesManager.equals(managerName, ignoreCase = true) }
+        val groupedList = filtered.groupBy { it.employeeId + "_" + it.month }.map { (_, performances) ->
+            val first = performances.first()
+            val actualCount = if (performances.size == 1 && first.limit.equals("NIL", ignoreCase = true)) 0 else performances.size
+            ReportSummary(first.employeeId, first.employeeName, first.branch, first.month, first.timestamp, actualCount)
+        }.sortedWith(
+            compareBy<ReportSummary> { getMonthIndex(it.month) }
+                .thenBy { it.employeeName }
+        )
+        adapter.updateList(groupedList)
+
+        val count = groupedList.size
+        if (count == 0) {
+            binding.tvFilterStatus.text = "Viewing Team: $managerName (0 Officers)"
+            binding.tvFilterStatus.setTextColor(Color.RED)
+        } else {
+            val cardText = if (count == 1) "1 Officer record" else "$count Officer records"
+            binding.tvFilterStatus.text = "Viewing Team: $managerName ($cardText)"
+            binding.tvFilterStatus.setTextColor(Color.parseColor("#3F51B5"))
+        }
     }
 
     private fun showCategoryDialog(title: String, categories: List<String>, onSelected: (String) -> Unit) {
@@ -1468,33 +1727,7 @@ class AdminDashboardActivity : AppCompatActivity() {
     // ========================================================
 
     private fun updateTeamTargetOverview() {
-        db.collection("employees")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val employees = snapshot.documents.mapNotNull { doc ->
-                    val u = doc.toObject(User::class.java)
-                    if (u != null) {
-                        val effective = if (u.employeeId.isBlank()) u.copy(employeeId = doc.id) else u
-                        val isApproved = effective.status.isBlank() ||
-                                         effective.status.equals("Approved", ignoreCase = true) ||
-                                         effective.status.equals("APPROVED", ignoreCase = true)
-                        if (isApproved && effective.isTargetEligible) effective else null
-                    } else null
-                }
-                val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
-                val totalTarget = employees.sumOf { it.monthlyTarget }
-                val achievedInMonth = allReports.count { 
-                    !it.limit.equals("NIL", ignoreCase = true) && it.month.equals(currentMonth, ignoreCase = true) 
-                }
-                
-                val rate = TargetUtils.calculateAchievementRate(achievedInMonth, totalTarget)
-                binding.tvAdminOverallAchievementBadge.text = TargetUtils.formatAchievementRate(achievedInMonth, totalTarget)
-                val color = TargetUtils.getAchievementColor(achievedInMonth, totalTarget)
-                binding.tvAdminOverallAchievementBadge.setTextColor(color)
-                binding.tvAdminTargetSummaryText.text = "Target: $totalTarget | Achieved: $achievedInMonth Cards ($currentMonth)"
-                binding.progressAdminOverallTarget.progress = rate.toInt().coerceIn(0, 100)
-                binding.progressAdminOverallTarget.setIndicatorColor(color)
-            }
+        // Option removed from dashboard
     }
 
     private fun showTargetManagementDialog() {
@@ -1633,6 +1866,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         adapter: TargetOfficerAdapter,
         onLoaded: (List<User>) -> Unit
     ) {
+        val isSalesManager = userRole.trim().equals("Sales Manager", ignoreCase = true)
         db.collection("employees")
             .get()
             .addOnSuccessListener { snapshot ->
@@ -1643,7 +1877,10 @@ class AdminDashboardActivity : AppCompatActivity() {
                         val isApproved = effective.status.isBlank() ||
                                          effective.status.equals("Approved", ignoreCase = true) ||
                                          effective.status.equals("APPROVED", ignoreCase = true)
-                        if (isApproved && effective.isTargetEligible) effective else null
+                        val belongsToManager = if (isSalesManager) {
+                            effective.salesManager.trim().equals(userName.trim(), ignoreCase = true)
+                        } else true
+                        if (isApproved && effective.isTargetEligible && belongsToManager) effective else null
                     } else null
                 }.sortedBy { it.name }
                 onLoaded(officers)
@@ -1654,6 +1891,11 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun showSetTargetDialog(user: User, initialMonth: String = "", onSaved: (() -> Unit)? = null) {
+        val isSalesManager = userRole.trim().equals("Sales Manager", ignoreCase = true)
+        if (isSalesManager && !user.salesManager.trim().equals(userName.trim(), ignoreCase = true)) {
+            Toast.makeText(this, "Access Denied: You can only set targets for your own team members.", Toast.LENGTH_SHORT).show()
+            return
+        }
         val targetBinding = DialogSetTargetBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this)
             .setView(targetBinding.root)
@@ -1737,6 +1979,11 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun showUserTargetDetailsDialog(user: User) {
+        val isSalesManager = userRole.trim().equals("Sales Manager", ignoreCase = true)
+        if (isSalesManager && !user.salesManager.trim().equals(userName.trim(), ignoreCase = true)) {
+            Toast.makeText(this, "Access Denied: You can only view details for your own team members.", Toast.LENGTH_SHORT).show()
+            return
+        }
         val detailsBinding = com.performance.tracker.databinding.DialogUserTargetDetailsBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this)
             .setView(detailsBinding.root)

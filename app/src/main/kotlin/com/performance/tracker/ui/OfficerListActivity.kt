@@ -89,6 +89,10 @@ class OfficerListActivity : AppCompatActivity() {
     private fun loadApprovedOfficers() {
         binding.progressBar.visibility = View.VISIBLE 
 
+        val loggedInRole = com.performance.tracker.util.SessionManager.getUserRole(this)
+        val loggedInName = com.performance.tracker.util.SessionManager.getUserName(this)
+        val isSalesManager = loggedInRole.equals("Sales Manager", ignoreCase = true)
+
         // Query all employees and filter officers safely (case-insensitive & doc id fallback)
         db.collection("employees") 
             .get()
@@ -112,6 +116,13 @@ class OfficerListActivity : AppCompatActivity() {
 
                 allOfficers.sortBy { it.name.lowercase() }
                 binding.tvTotalBadge.text = "${allOfficers.size} Total"
+
+                if (isSalesManager && selectedDepartment.equals("All", ignoreCase = true)) {
+                    val hasTeam = allOfficers.any { it.salesManager.trim().equals(loggedInName.trim(), ignoreCase = true) }
+                    if (hasTeam) {
+                        selectedDepartment = "MY_TEAM"
+                    }
+                }
 
                 db.collection("performance").get()
                     .addOnSuccessListener { perfSnapshot ->
@@ -147,6 +158,16 @@ class OfficerListActivity : AppCompatActivity() {
             .distinct()
             .sorted()
 
+        val loggedInRole = com.performance.tracker.util.SessionManager.getUserRole(this)
+        val loggedInName = com.performance.tracker.util.SessionManager.getUserName(this)
+        val isSalesManager = loggedInRole.equals("Sales Manager", ignoreCase = true) || loggedInRole.contains("Manager", ignoreCase = true)
+
+        val myTeamCount = if (isSalesManager && loggedInName.isNotBlank()) {
+            allOfficers.count { it.salesManager.trim().equals(loggedInName.trim(), ignoreCase = true) }
+        } else {
+            0
+        }
+
         // 1. "All" Chip
         val allChip = createFilterChip(
             displayText = "All (${allOfficers.size})",
@@ -154,6 +175,16 @@ class OfficerListActivity : AppCompatActivity() {
             deptTag = "All"
         )
         binding.chipGroupDepartments.addView(allChip)
+
+        // 1b. "My Team" Chip (for Sales Manager)
+        if (myTeamCount > 0) {
+            val myTeamChip = createFilterChip(
+                displayText = "👥 My Team ($myTeamCount)",
+                isChecked = selectedDepartment.equals("MY_TEAM", ignoreCase = true),
+                deptTag = "MY_TEAM"
+            )
+            binding.chipGroupDepartments.addView(myTeamChip)
+        }
 
         // 2. "<50% Target Alert" Chip (if any exist)
         if (belowThresholdCount > 0) {
@@ -213,6 +244,8 @@ class OfficerListActivity : AppCompatActivity() {
         val query = binding.etSearchOfficers.text?.toString()?.trim()?.lowercase().orEmpty()
         val isAllDept = selectedDepartment.equals("All", ignoreCase = true)
         val isBelow50Filter = selectedDepartment.equals("BELOW_50", ignoreCase = true)
+        val isMyTeamFilter = selectedDepartment.equals("MY_TEAM", ignoreCase = true)
+        val loggedInName = com.performance.tracker.util.SessionManager.getUserName(this).trim()
         val currentMonth = SimpleDateFormat("MMMM", Locale.US).format(Date())
 
         val filtered = allOfficers.filter { user ->
@@ -225,6 +258,7 @@ class OfficerListActivity : AppCompatActivity() {
                 user.salesManager.lowercase().contains(query)
 
             val matchesDepartment = when {
+                isMyTeamFilter -> user.salesManager.trim().equals(loggedInName, ignoreCase = true)
                 isBelow50Filter -> {
                     val target = user.monthlyTarget
                     val achieved = TargetUtils.countCards(allPerformances, user.employeeId, currentMonth)

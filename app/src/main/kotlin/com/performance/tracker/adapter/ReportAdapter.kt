@@ -30,7 +30,22 @@ class ReportAdapter(
         val item = list[position]
         holder.binding.apply {
             tvUserName.text = "Name: ${item.employeeName}"
-            tvMonth.text = item.month
+            val fullMonth = when {
+                item.month.contains("Jan", ignoreCase = true) -> "January"
+                item.month.contains("Feb", ignoreCase = true) -> "February"
+                item.month.contains("Mar", ignoreCase = true) -> "March"
+                item.month.contains("Apr", ignoreCase = true) -> "April"
+                item.month.contains("May", ignoreCase = true) -> "May"
+                item.month.contains("Jun", ignoreCase = true) -> "June"
+                item.month.contains("Jul", ignoreCase = true) -> "July"
+                item.month.contains("Aug", ignoreCase = true) -> "August"
+                item.month.contains("Sep", ignoreCase = true) -> "September"
+                item.month.contains("Oct", ignoreCase = true) -> "October"
+                item.month.contains("Nov", ignoreCase = true) -> "November"
+                item.month.contains("Dec", ignoreCase = true) -> "December"
+                else -> item.month
+            }
+            tvMonth.text = fullMonth
             
             val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
             val dateStr = sdf.format(Date(item.timestamp))

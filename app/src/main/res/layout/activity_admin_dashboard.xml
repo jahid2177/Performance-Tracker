@@ -7,61 +7,100 @@
      android:background="@color/background"
      android:orientation="vertical">
 
-    <!-- Top App Bar matching screenshot aesthetic -->
+    <!-- Top Executive Header Bar -->
     <LinearLayout
          android:layout_height="wrap_content"
          android:layout_width="match_parent"
-         android:background="@color/background"
+         android:background="@color/surface"
          android:gravity="center_vertical"
          android:paddingHorizontal="20dp"
-         android:paddingTop="20dp"
-         android:paddingBottom="12dp">
+         android:paddingTop="16dp"
+         android:paddingBottom="14dp"
+         android:elevation="1dp">
 
-        <TextView
-             android:layout_height="wrap_content"
+        <LinearLayout
              android:layout_width="0dp"
-             android:textSize="24sp"
-             android:textColor="@color/text_primary"
+             android:layout_height="wrap_content"
              android:layout_weight="1"
-             android:id="@+id/tvHeaderTitle"
-             android:text="Control Panel"
-             android:textStyle="bold" />
+             android:orientation="vertical">
+
+            <TextView
+                 android:id="@+id/tvHeaderTitle"
+                 android:layout_height="wrap_content"
+                 android:layout_width="wrap_content"
+                 android:textSize="22sp"
+                 android:textColor="@color/text_primary"
+                 android:text="Control Panel (ADMIN)"
+                 android:textStyle="bold" />
+
+            <TextView
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:text="Performance &amp; Analytics Dashboard"
+                 android:textColor="@color/text_secondary"
+                 android:textSize="12sp"
+                 android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- Firestore & Room Sync Status Button -->
+        <com.google.android.material.card.MaterialCardView
+             android:id="@+id/btnAdminSyncStatus"
+             android:layout_height="42dp"
+             android:layout_width="42dp"
+             android:layout_marginEnd="10dp"
+             app:cardCornerRadius="21dp"
+             app:cardElevation="0dp"
+             app:strokeWidth="1dp"
+             app:strokeColor="@color/card_stroke"
+             app:cardBackgroundColor="@color/background"
+             android:clickable="true"
+             android:focusable="true">
+
+            <ImageView
+                 android:id="@+id/ivAdminSyncIcon"
+                 android:layout_height="22dp"
+                 android:layout_width="22dp"
+                 android:layout_gravity="center"
+                 android:src="@drawable/ic_cloud_done"
+                 app:tint="#15803D" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content">
 
             <com.google.android.material.card.MaterialCardView
-                 android:layout_height="40dp"
-                 android:layout_width="40dp"
-                 app:cardCornerRadius="20dp"
+                 android:id="@+id/btnAdminSettings"
+                 android:layout_height="42dp"
+                 android:layout_width="42dp"
+                 app:cardCornerRadius="21dp"
                  app:cardElevation="0dp"
                  app:strokeWidth="1dp"
                  app:strokeColor="@color/card_stroke"
-                 app:cardBackgroundColor="@color/surface"
+                 app:cardBackgroundColor="@color/background"
                  android:clickable="true"
-                 android:focusable="true"
-                 android:id="@+id/btnAdminSettings">
+                 android:focusable="true">
 
                 <ImageView
+                     android:id="@+id/ivAdminSettingsIcon"
                      android:layout_height="22dp"
                      android:layout_width="22dp"
                      android:layout_gravity="center"
                      android:src="@drawable/ic_settings"
-                     app:tint="@color/text_primary"
-                     android:id="@+id/ivAdminSettingsIcon" />
+                     app:tint="@color/text_primary" />
 
             </com.google.android.material.card.MaterialCardView>
 
             <View
-                android:id="@+id/viewAdminSettingsRedDot"
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="2dp"
-                android:layout_marginEnd="2dp"
-                android:background="@drawable/bg_badge_red_dot"
-                android:visibility="gone" />
+                 android:id="@+id/viewAdminSettingsRedDot"
+                 android:layout_width="12dp"
+                 android:layout_height="12dp"
+                 android:layout_gravity="top|end"
+                 android:background="@drawable/bg_badge_red_dot"
+                 android:visibility="gone" />
+
         </FrameLayout>
 
     </LinearLayout>
@@ -75,20 +114,23 @@
              android:layout_height="wrap_content"
              android:layout_width="match_parent"
              android:paddingHorizontal="16dp"
+             android:paddingTop="12dp"
              android:paddingBottom="24dp"
              android:orientation="vertical">
 
+            <!-- MAIN ACTIONS SECTION -->
             <LinearLayout
+                 android:id="@+id/optionsLayout"
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
-                 android:orientation="vertical"
-                 android:id="@+id/optionsLayout">
+                 android:orientation="vertical">
 
-                <!-- Main Actions Section -->
                 <TextView
                      style="@style/SectionHeader"
-                     android:text="MAIN ACTIONS" />
+                     android:text="MAIN ACTIONS"
+                     android:layout_marginBottom="8dp" />
 
+                <!-- Action Grid Row 1: Month View & Individual View -->
                 <LinearLayout
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
@@ -97,33 +139,40 @@
                      android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/btnFilterMonthWise"
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         android:layout_weight="1"
                          android:layout_marginEnd="6dp"
                          app:backgroundTint="@color/badge_green_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_green_icon"
-                         android:layout_weight="1"
-                         android:id="@+id/btnFilterMonthWise"
-                         android:text="Month"
-                         android:textStyle="bold" />
+                         android:text="Month View"
+                         android:textStyle="bold"
+                         app:icon="@drawable/ic_report"
+                         app:iconTint="@color/badge_green_icon"
+                         app:iconPadding="8dp" />
 
                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/btnFilterIndividual"
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         android:layout_weight="1"
+                         android:layout_marginStart="6dp"
                          app:backgroundTint="@color/badge_blue_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_blue_icon"
-                         android:layout_marginStart="6dp"
-                         android:layout_weight="1"
-                         android:id="@+id/btnFilterIndividual"
-                         android:text="Individual"
-                         android:textStyle="bold" />
+                         android:text="Individual View"
+                         android:textStyle="bold"
+                         app:icon="@drawable/ic_person"
+                         app:iconTint="@color/badge_blue_icon"
+                         app:iconPadding="8dp" />
 
                 </LinearLayout>
 
+                <!-- Action Grid Row 2: Monthly PDF & Export Excel -->
                 <LinearLayout
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
@@ -132,191 +181,82 @@
                      android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/btnMonthlyPdf"
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         android:layout_weight="1"
                          android:layout_marginEnd="6dp"
                          app:backgroundTint="@color/badge_mint_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_mint_icon"
-                         android:layout_weight="1"
-                         android:id="@+id/btnMonthlyPdf"
                          android:text="Monthly PDF"
-                         android:textStyle="bold" />
+                         android:textStyle="bold"
+                         app:icon="@drawable/ic_file_pdf"
+                         app:iconTint="@color/badge_mint_icon"
+                         app:iconPadding="8dp" />
 
                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/btnExportCsv"
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         android:layout_weight="1"
+                         android:layout_marginStart="6dp"
                          app:backgroundTint="@color/badge_blue_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_blue_icon"
-                         android:layout_marginStart="6dp"
-                         android:layout_weight="1"
-                         android:id="@+id/btnExportCsv"
                          android:text="Export Excel"
-                         android:textStyle="bold" />
+                         android:textStyle="bold"
+                         app:icon="@drawable/ic_share"
+                         app:iconTint="@color/badge_blue_icon"
+                         app:iconPadding="8dp" />
 
                 </LinearLayout>
 
+                <!-- Action Grid Row 3: Not Submitted & Trend Chart Toggle -->
                 <LinearLayout
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
-                     android:layout_marginBottom="16dp"
+                     android:layout_marginBottom="12dp"
                      android:weightSum="2"
                      android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/btnWhoNotSubmitted"
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         android:layout_weight="1"
                          android:layout_marginEnd="6dp"
                          app:backgroundTint="@color/badge_red_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_red_icon"
-                         android:layout_weight="1"
-                         android:id="@+id/btnWhoNotSubmitted"
                          android:text="Not Submitted"
-                         android:textStyle="bold" />
+                         android:textStyle="bold"
+                         app:icon="@drawable/ic_clear"
+                         app:iconTint="@color/badge_red_icon"
+                         app:iconPadding="8dp" />
 
                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/btnToggleTrendChart"
                          android:layout_height="52dp"
                          android:layout_width="0dp"
+                         android:layout_weight="1"
+                         android:layout_marginStart="6dp"
                          app:backgroundTint="@color/badge_amber_bg"
                          app:cornerRadius="14dp"
                          app:elevation="0dp"
                          android:textColor="@color/badge_amber_icon"
-                         android:layout_marginStart="6dp"
-                         android:layout_weight="1"
-                         android:id="@+id/btnToggleTrendChart"
                          android:text="Trend Chart"
-                         android:textStyle="bold" />
+                         android:textStyle="bold"
+                         app:icon="@drawable/ic_chart_line"
+                         app:iconTint="@color/badge_amber_icon"
+                         app:iconPadding="8dp" />
 
                 </LinearLayout>
 
-                <LinearLayout
-                     android:layout_height="wrap_content"
-                     android:layout_width="match_parent"
-                     android:layout_marginBottom="16dp"
-                     android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                         android:layout_height="52dp"
-                         android:layout_width="match_parent"
-                         app:backgroundTint="@color/badge_mint_bg"
-                         app:cornerRadius="14dp"
-                         app:elevation="0dp"
-                         android:textColor="@color/badge_mint_icon"
-                         android:id="@+id/btnManageTargets"
-                         app:icon="@drawable/ic_target"
-                         app:iconTint="@color/badge_mint_icon"
-                         android:text="🎯 Employee Targets &amp; Achievement"
-                         android:textStyle="bold" />
-
-                </LinearLayout>
-
-                <!-- Target & Achievement Summary Card -->
-                <com.google.android.material.card.MaterialCardView
-                     android:layout_height="wrap_content"
-                     android:layout_width="match_parent"
-                     android:layout_marginBottom="18dp"
-                     app:cardCornerRadius="16dp"
-                     app:cardElevation="0dp"
-                     app:strokeWidth="1dp"
-                     app:strokeColor="@color/card_stroke"
-                     app:cardBackgroundColor="@color/surface"
-                     android:id="@+id/cardAdminTargetOverview">
-
-                     <LinearLayout
-                          android:layout_height="wrap_content"
-                          android:layout_width="match_parent"
-                          android:orientation="vertical"
-                          android:padding="16dp">
-
-                          <LinearLayout
-                               android:layout_height="wrap_content"
-                               android:layout_width="match_parent"
-                               android:gravity="center_vertical"
-                               android:orientation="horizontal">
-
-                               <FrameLayout
-                                    android:layout_width="36dp"
-                                    android:layout_height="36dp"
-                                    android:background="@drawable/bg_badge_mint">
-
-                                    <ImageView
-                                         android:layout_width="20dp"
-                                         android:layout_height="20dp"
-                                         android:layout_gravity="center"
-                                         android:src="@drawable/ic_target"
-                                         app:tint="@color/badge_mint_icon" />
-                               </FrameLayout>
-
-                               <TextView
-                                    android:layout_height="wrap_content"
-                                    android:layout_width="0dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginStart="10dp"
-                                    android:textSize="15sp"
-                                    android:textColor="@color/text_primary"
-                                    android:textStyle="bold"
-                                    android:text="Team Target Achievement" />
-
-                               <TextView
-                                    android:id="@+id/tvAdminOverallAchievementBadge"
-                                    android:layout_height="wrap_content"
-                                    android:layout_width="wrap_content"
-                                    android:background="@drawable/bg_badge_green"
-                                    android:textColor="@color/badge_green_icon"
-                                    android:textSize="12sp"
-                                    android:textStyle="bold"
-                                    android:paddingHorizontal="10dp"
-                                    android:paddingVertical="4dp"
-                                    android:text="0.0%" />
-                          </LinearLayout>
-
-                          <LinearLayout
-                               android:layout_height="wrap_content"
-                               android:layout_width="match_parent"
-                               android:orientation="horizontal"
-                               android:gravity="center_vertical"
-                               android:layout_marginTop="12dp">
-
-                               <TextView
-                                    android:id="@+id/tvAdminTargetSummaryText"
-                                    android:layout_height="wrap_content"
-                                    android:layout_width="0dp"
-                                    android:layout_weight="1"
-                                    android:textSize="13sp"
-                                    android:textColor="@color/text_secondary"
-                                    android:text="Target: 0 | Achieved: 0 Cards" />
-
-                               <TextView
-                                    android:id="@+id/btnAdminQuickManageTargets"
-                                    android:layout_height="wrap_content"
-                                    android:layout_width="wrap_content"
-                                    android:text="Manage Targets ›"
-                                    android:textColor="@color/primary"
-                                    android:textStyle="bold"
-                                    android:textSize="13sp" />
-                          </LinearLayout>
-
-                          <com.google.android.material.progressindicator.LinearProgressIndicator
-                               android:id="@+id/progressAdminOverallTarget"
-                               android:layout_width="match_parent"
-                               android:layout_height="wrap_content"
-                               android:layout_marginTop="10dp"
-                               app:trackCornerRadius="4dp"
-                               app:trackThickness="8dp"
-                               app:trackColor="#E0E0E0"
-                               app:indicatorColor="@color/primary"
-                               android:progress="0"
-                               android:max="100" />
-
-                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Keep legacy button hidden for backward compatibility -->
+                <!-- Hidden Legacy Button for Backward Compatibility -->
                 <Button
                      android:id="@+id/btnDownloadExcel"
                      android:layout_width="0dp"
@@ -325,15 +265,15 @@
 
                 <!-- Performance Trend Line Chart Card (MPAndroidChart) -->
                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/cardTrendChart"
                      android:layout_height="wrap_content"
                      android:layout_width="match_parent"
                      android:layout_marginBottom="18dp"
-                     app:cardCornerRadius="16dp"
+                     app:cardCornerRadius="18dp"
                      app:cardElevation="0dp"
                      app:strokeWidth="1dp"
                      app:strokeColor="@color/card_stroke"
-                     app:cardBackgroundColor="@color/surface"
-                     android:id="@+id/cardTrendChart">
+                     app:cardBackgroundColor="@color/surface">
 
                     <LinearLayout
                          android:layout_height="wrap_content"
@@ -354,22 +294,22 @@
                                  app:tint="@color/primary" />
 
                             <TextView
+                                 android:id="@+id/tvTrendChartTitle"
                                  android:layout_height="wrap_content"
                                  android:layout_width="0dp"
                                  android:layout_weight="1"
-                                 android:layout_marginStart="8dp"
-                                 android:textSize="15sp"
+                                 android:layout_marginStart="10dp"
+                                 android:textSize="16sp"
                                  android:textColor="@color/text_primary"
                                  android:textStyle="bold"
-                                 android:id="@+id/tvTrendChartTitle"
-                                 android:text="Employee Performance Trend" />
+                                 android:text="Performance Trend Analytics" />
 
                             <TextView
+                                 android:id="@+id/tvTrendSelectedOfficer"
                                  android:layout_height="wrap_content"
                                  android:layout_width="wrap_content"
                                  android:textSize="12sp"
                                  android:textColor="@color/text_secondary"
-                                 android:id="@+id/tvTrendSelectedOfficer"
                                  android:text="All Officers" />
 
                         </LinearLayout>
@@ -378,7 +318,7 @@
                         <LinearLayout
                              android:layout_height="wrap_content"
                              android:layout_width="match_parent"
-                             android:layout_marginTop="10dp"
+                             android:layout_marginTop="12dp"
                              android:gravity="center_vertical"
                              android:orientation="horizontal">
 
@@ -387,15 +327,15 @@
                                  android:layout_width="wrap_content"
                                  android:textSize="13sp"
                                  android:textColor="@color/text_secondary"
-                                 android:text="Officer:"
+                                 android:text="Select Officer:"
                                  android:textStyle="bold" />
 
                             <Spinner
+                                 android:id="@+id/spinnerChartEmployee"
                                  android:layout_height="42dp"
                                  android:layout_width="match_parent"
-                                 android:layout_marginStart="8dp"
-                                 android:backgroundTint="@color/primary"
-                                 android:id="@+id/spinnerChartEmployee" />
+                                 android:layout_marginStart="10dp"
+                                 android:backgroundTint="@color/primary" />
 
                         </LinearLayout>
 
@@ -403,7 +343,7 @@
                         <LinearLayout
                              android:layout_height="wrap_content"
                              android:layout_width="match_parent"
-                             android:layout_marginTop="10dp"
+                             android:layout_marginTop="12dp"
                              android:weightSum="3"
                              android:orientation="horizontal">
 
@@ -417,12 +357,12 @@
                                  android:orientation="vertical">
 
                                 <TextView
+                                     android:id="@+id/tvTrendTotalCards"
                                      android:layout_height="wrap_content"
                                      android:layout_width="wrap_content"
                                      android:textSize="12sp"
                                      android:textColor="@color/badge_blue_icon"
                                      android:textStyle="bold"
-                                     android:id="@+id/tvTrendTotalCards"
                                      android:text="Total: 0" />
 
                                 <TextView
@@ -444,12 +384,12 @@
                                  android:orientation="vertical">
 
                                 <TextView
+                                     android:id="@+id/tvTrendPeakMonth"
                                      android:layout_height="wrap_content"
                                      android:layout_width="wrap_content"
                                      android:textSize="12sp"
                                      android:textColor="@color/badge_green_icon"
                                      android:textStyle="bold"
-                                     android:id="@+id/tvTrendPeakMonth"
                                      android:text="Peak: -" />
 
                                 <TextView
@@ -471,12 +411,12 @@
                                  android:orientation="vertical">
 
                                 <TextView
+                                     android:id="@+id/tvTrendAvgMonthly"
                                      android:layout_height="wrap_content"
                                      android:layout_width="wrap_content"
                                      android:textSize="12sp"
                                      android:textColor="@color/badge_mint_icon"
                                      android:textStyle="bold"
-                                     android:id="@+id/tvTrendAvgMonthly"
                                      android:text="Avg: 0.0" />
 
                                 <TextView
@@ -492,19 +432,20 @@
 
                         <!-- MPAndroidChart LineChart -->
                         <com.github.mikephil.charting.charts.LineChart
+                             android:id="@+id/trendLineChart"
                              android:layout_height="220dp"
                              android:layout_width="match_parent"
-                             android:layout_marginTop="12dp"
-                             android:id="@+id/trendLineChart" />
+                             android:layout_marginTop="12dp" />
 
                     </LinearLayout>
 
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Filters & Ranking Section -->
+                <!-- FILTERS & RANKING NAVIGATION -->
                 <TextView
                      style="@style/SectionHeader"
-                     android:text="FILTERS &amp; RANKING" />
+                     android:text="QUICK FILTERS &amp; RANKING"
+                     android:layout_marginBottom="8dp" />
 
                 <HorizontalScrollView
                      android:layout_height="wrap_content"
@@ -518,64 +459,65 @@
                          android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="46dp"
+                             android:id="@+id/btnFilterRanking"
+                             android:layout_height="44dp"
                              android:layout_width="wrap_content"
                              android:layout_marginEnd="8dp"
                              app:backgroundTint="@color/badge_amber_bg"
                              app:cornerRadius="12dp"
                              app:elevation="0dp"
                              android:textColor="@color/badge_amber_icon"
-                             android:id="@+id/btnFilterRanking"
                              android:text="Ranking"
-                             android:textStyle="bold" />
+                             android:textStyle="bold"
+                             app:icon="@drawable/ic_trophy"
+                             app:iconTint="@color/badge_amber_icon"
+                             app:iconPadding="6dp" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="46dp"
+                             android:id="@+id/btnOfficerList"
+                             android:layout_height="44dp"
                              android:layout_width="wrap_content"
                              android:layout_marginEnd="8dp"
+                             android:visibility="gone"
                              app:backgroundTint="@color/badge_blue_bg"
                              app:cornerRadius="12dp"
                              app:elevation="0dp"
                              android:textColor="@color/badge_blue_icon"
-                             android:id="@+id/btnOfficerList"
                              android:text="Officer List"
-                             android:textStyle="bold" />
+                             android:textStyle="bold"
+                             app:icon="@drawable/ic_officers"
+                             app:iconTint="@color/badge_blue_icon"
+                             app:iconPadding="6dp" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="46dp"
-                             android:layout_width="wrap_content"
-                             android:layout_marginEnd="8dp"
-                             app:backgroundTint="@color/badge_green_bg"
-                             app:cornerRadius="12dp"
-                             app:elevation="0dp"
-                             android:textColor="@color/badge_green_icon"
-                             android:id="@+id/btnApproval"
-                             android:text="Approval List"
-                             android:textStyle="bold" />
-
-                        <com.google.android.material.button.MaterialButton
-                             android:layout_height="46dp"
+                             android:id="@+id/btnFilterZone"
+                             android:layout_height="44dp"
                              android:layout_width="wrap_content"
                              android:layout_marginEnd="8dp"
                              app:backgroundTint="@color/badge_grey_bg"
                              app:cornerRadius="12dp"
                              app:elevation="0dp"
                              android:textColor="@color/badge_grey_icon"
-                             android:id="@+id/btnFilterZone"
                              android:text="Zone"
-                             android:textStyle="bold" />
+                             android:textStyle="bold"
+                             app:icon="@drawable/ic_location"
+                             app:iconTint="@color/badge_grey_icon"
+                             app:iconPadding="6dp" />
 
                         <com.google.android.material.button.MaterialButton
-                             android:layout_height="46dp"
+                             android:id="@+id/btnFilterTeam"
+                             android:layout_height="44dp"
                              android:layout_width="wrap_content"
                              android:layout_marginEnd="4dp"
                              app:backgroundTint="@color/badge_mint_bg"
                              app:cornerRadius="12dp"
                              app:elevation="0dp"
                              android:textColor="@color/badge_mint_icon"
-                             android:id="@+id/btnFilterTeam"
                              android:text="Manager Team"
-                             android:textStyle="bold" />
+                             android:textStyle="bold"
+                             app:icon="@drawable/ic_supervisor"
+                             app:iconTint="@color/badge_mint_icon"
+                             app:iconPadding="6dp" />
 
                     </LinearLayout>
 
@@ -589,44 +531,48 @@
                  android:layout_marginBottom="16dp"
                  android:background="@color/divider_color" />
 
+            <!-- Dashboard Feed Header & Sync Refresh -->
             <RelativeLayout
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
                  android:layout_marginBottom="12dp">
 
                 <TextView
+                     android:id="@+id/tvFilterStatus"
                      android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
                      android:layout_centerVertical="true"
-                     android:textSize="17sp"
+                     android:textSize="16sp"
                      android:textColor="@color/text_primary"
-                     android:id="@+id/tvFilterStatus"
                      android:text="Dashboard: 0 cards"
                      android:textStyle="bold" />
 
                 <ImageView
+                     android:id="@+id/btnRefresh"
                      android:layout_height="28dp"
                      android:layout_width="28dp"
-                     android:src="@android:drawable/ic_popup_sync"
+                     android:src="@drawable/ic_refresh"
                      android:layout_centerVertical="true"
                      app:tint="@color/primary"
                      android:layout_alignParentEnd="true"
-                     android:id="@+id/btnRefresh" />
+                     android:clickable="true"
+                     android:focusable="true"
+                     android:background="?attr/selectableItemBackgroundBorderless" />
 
             </RelativeLayout>
 
             <ProgressBar
+                 android:id="@+id/progressBar"
                  android:layout_height="wrap_content"
                  android:layout_width="wrap_content"
                  android:visibility="gone"
-                 android:id="@+id/progressBar"
                  android:layout_gravity="center" />
 
             <androidx.recyclerview.widget.RecyclerView
+                 android:id="@+id/recyclerAdminReport"
                  android:layout_height="wrap_content"
                  android:layout_width="match_parent"
-                 android:nestedScrollingEnabled="false"
-                 android:id="@+id/recyclerAdminReport" />
+                 android:nestedScrollingEnabled="false" />
 
         </LinearLayout>
 

@@ -62,28 +62,30 @@ class MainViewModel : ViewModel() {
     // নতুন কোড নিচে যুক্ত করা হলো
     // ==========================================
 
-    // ৪. শুধুমাত্র নিজের রিপোর্ট দেখা (User Dashboard)
+    private var allReportsRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var myReportsRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+
+    // ৪. শুধুমাত্র নিজের রিপোর্ট দেখা (User Dashboard - Realtime Auto Load)
     fun getMyReports(employeeId: String) {
-        viewModelScope.launch {
-            try {
-                val list = repo.getMyReports(employeeId)
-                reportList.postValue(list)
-            } catch (e: Exception) {
-                errorMsg.postValue("Failed to load reports: ${e.message}")
-            }
+        if (employeeId.isBlank()) return
+        myReportsRegistration?.remove()
+        myReportsRegistration = repo.listenMyReports(employeeId) { list ->
+            reportList.postValue(list)
         }
     }
 
-    // ৫. সকল রিপোর্ট দেখা (Admin Dashboard)
+    // ৫. সকল রিপোর্ট দেখা (Admin Dashboard - Realtime Auto Load)
     fun getAllReports() {
-        viewModelScope.launch {
-            try {
-                val list = repo.getAllReports()
-                reportList.postValue(list)
-            } catch (e: Exception) {
-                errorMsg.postValue("Failed to load admin data: ${e.message}")
-            }
+        allReportsRegistration?.remove()
+        allReportsRegistration = repo.listenAllReports { list ->
+            reportList.postValue(list)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        allReportsRegistration?.remove()
+        myReportsRegistration?.remove()
     }
 
     // ৬. থ্রেশহোল্ড মনিটরিং (৫০% এর কম টার্গেট প্রাপ্ত এমপ্লয়ীদের চিহ্নিত করা)

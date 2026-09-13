@@ -56,16 +56,22 @@ object PdfKpiParser {
     fun parseKpiText(fullText: String): List<ParsedKpiAccount> {
         val result = mutableListOf<ParsedKpiAccount>()
         
-        // Account pattern: e.g. 2706-906-000746 or 2369-906-002021 or \d{4}-\d{3}-\d{6}
-        val acPattern = Pattern.compile("\\b(\\d{4}-\\d{3}-\\d{6})\\b")
+        // Account pattern matching formats like 2706-906-000746 or 2706 906 000746
+        val acPattern = Pattern.compile("\\b(\\d{4}[ -]?\\d{3}[ -]?\\d{6}|\\d{4}-\\d{3}-\\d{6})\\b")
         val matcher = acPattern.matcher(fullText)
 
-        val accountMatches = mutableListOf<Pair<String, Int>>() // Pair(accountNo, startIndex)
+        val rawMatches = mutableListOf<Pair<String, Int>>() // Pair(accountNo, startIndex)
         while (matcher.find()) {
             val ac = matcher.group(1)
             if (ac != null) {
-                accountMatches.add(Pair(ac, matcher.start()))
+                rawMatches.add(Pair(ac, matcher.start()))
             }
+        }
+
+        // 🔥 STRICT FILTER: ONLY **** 906 ******, ****-906-****** accounts
+        val accountMatches = rawMatches.filter { (ac, _) ->
+            val cleanAc = ac.replace(" ", "-")
+            cleanAc.contains("-906-") || cleanAc.contains(" 906 ") || cleanAc.contains("906")
         }
 
         if (accountMatches.isEmpty()) {
@@ -76,7 +82,8 @@ object PdfKpiParser {
         val amountPattern = Pattern.compile("\\b([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{2})?|[0-9]+(?:\\.[0-9]{2})?)\\b")
 
         for (i in accountMatches.indices) {
-            val (accountNo, startIndex) = accountMatches[i]
+            val (rawAc, startIndex) = accountMatches[i]
+            val accountNo = if (rawAc.contains(" ") && !rawAc.contains("-")) rawAc.replace(" ", "-") else rawAc
             val endIndex = if (i + 1 < accountMatches.size) {
                 accountMatches[i + 1].second
             } else {
@@ -206,7 +213,18 @@ object PdfKpiParser {
             )
         }
 
-        return result
+        // 🔥 Prevent double entry for any month
+        val uniqueResults = mutableListOf<ParsedKpiAccount>()
+        val seenKeys = mutableSetOf<String>()
+
+        for (item in result) {
+            val key = "${item.accountNo.trim().lowercase()}_${item.month.trim().lowercase()}"
+            if (seenKeys.add(key)) {
+                uniqueResults.add(item)
+            }
+        }
+
+        return uniqueResults
     }
 
     private fun cleanTitleName(raw: String): String {

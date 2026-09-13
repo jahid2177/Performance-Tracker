@@ -24,10 +24,8 @@ object TargetUtils {
         if (target <= 0) return Color.parseColor("#757575")
         val rate = calculateAchievementRate(achieved, target)
         return when {
-            rate >= 100f -> Color.parseColor("#2E7D32") // Green
-            rate >= 75f -> Color.parseColor("#1976D2")  // Blue
-            rate >= 50f -> Color.parseColor("#F57C00")  // Orange
-            else -> Color.parseColor("#D32F2F")         // Red
+            rate >= 50f -> Color.parseColor("#2E7D32") // Green for 50% and above
+            else -> Color.parseColor("#D32F2F")        // Red for below 50%
         }
     }
 
@@ -42,9 +40,11 @@ object TargetUtils {
     }
 
     fun countCards(reports: List<Performance>, employeeId: String, month: String? = null): Int {
-        val userReports = reports.filter { it.employeeId.equals(employeeId, ignoreCase = true) }
+        val cleanEmpId = employeeId.trim()
+        val userReports = reports.filter { it.employeeId.trim().equals(cleanEmpId, ignoreCase = true) }
         val filtered = if (!month.isNullOrBlank() && !month.equals("All", ignoreCase = true)) {
-            userReports.filter { it.month.equals(month, ignoreCase = true) }
+            val cleanMonth = month.trim()
+            userReports.filter { it.month.trim().equals(cleanMonth, ignoreCase = true) }
         } else {
             userReports
         }
@@ -63,13 +63,14 @@ object TargetUtils {
         onFailure: (Exception) -> Unit
     ) {
         val db = FirebaseFirestore.getInstance()
-        val cleanMonth = if (month.isBlank()) "General" else month
-        val docId = "${employeeId}_${cleanMonth.uppercase()}"
+        val cleanEmpId = employeeId.trim()
+        val cleanMonth = if (month.isBlank()) "General" else month.trim()
+        val docId = "${cleanEmpId}_${cleanMonth.uppercase()}"
 
         val calculatedYearly = if (yearlyTargetCards > 0) yearlyTargetCards else (targetCards * 12)
 
         val targetObj = EmployeeTarget(
-            employeeId = employeeId,
+            employeeId = cleanEmpId,
             employeeName = employeeName,
             month = cleanMonth,
             targetCards = targetCards,
@@ -83,18 +84,31 @@ object TargetUtils {
         db.collection("targets").document(docId)
             .set(targetObj, SetOptions.merge())
             .addOnSuccessListener {
-                // Also update user's monthlyTarget and yearlyTarget field in employees collection
                 val userUpdate = mapOf(
                     "monthlyTarget" to targetCards,
                     "yearlyTarget" to calculatedYearly
                 )
-                db.collection("employees").document(employeeId)
-                    .set(userUpdate, SetOptions.merge())
-                    .addOnSuccessListener {
-                        onSuccess()
+                // Update employees collection safely
+                db.collection("employees").document(cleanEmpId).get()
+                    .addOnSuccessListener { doc ->
+                        if (doc.exists()) {
+                            db.collection("employees").document(cleanEmpId).set(userUpdate, SetOptions.merge())
+                                .addOnCompleteListener { onSuccess() }
+                        } else {
+                            db.collection("employees").whereEqualTo("employeeId", cleanEmpId).get()
+                                .addOnSuccessListener { querySnap ->
+                                    if (!querySnap.isEmpty) {
+                                        val realDocId = querySnap.documents.first().id
+                                        db.collection("employees").document(realDocId).set(userUpdate, SetOptions.merge())
+                                            .addOnCompleteListener { onSuccess() }
+                                    } else {
+                                        onSuccess()
+                                    }
+                                }
+                                .addOnFailureListener { onSuccess() }
+                        }
                     }
                     .addOnFailureListener {
-                        // Even if user doc update fails, targets doc succeeded
                         onSuccess()
                     }
             }

@@ -46,14 +46,17 @@ class ApprovalActivity : AppCompatActivity() {
     private fun fetchPendingUsers() {
         binding.progressBar.visibility = View.VISIBLE
         
-        // 🔥 "role", "USER" ফিল্টারটি বাদ দেওয়া হয়েছে। এখন শুধুমাত্র "status" == "Pending" খুঁজবে।
-        // মনে রাখবেন, RegistrationActivity তে আমরা status কে "Pending" (Capital P) হিসেবে সেভ করেছি।
         db.collection("employees")
-            .whereEqualTo("status", "Pending") 
             .get()
             .addOnSuccessListener { snapshot ->
                 binding.progressBar.visibility = View.GONE
-                val users = snapshot.toObjects(User::class.java)
+                val users = snapshot.documents.mapNotNull { doc ->
+                    val u = doc.toObject(User::class.java)
+                    if (u != null) {
+                        val effective = if (u.employeeId.isBlank()) u.copy(employeeId = doc.id) else u
+                        if (effective.status.trim().equals("Pending", ignoreCase = true)) effective else null
+                    } else null
+                }
                 
                 if (users.isEmpty()) {
                     binding.tvEmpty.visibility = View.VISIBLE
@@ -71,13 +74,32 @@ class ApprovalActivity : AppCompatActivity() {
     }
 
     private fun updateUserStatus(id: String, status: String) {
-        db.collection("employees").document(id).update("status", status)
+        val cleanId = id.trim()
+        db.collection("employees").document(cleanId).update("status", status)
             .addOnSuccessListener {
                 Toast.makeText(this, "User Approved Successfully!", Toast.LENGTH_SHORT).show()
-                fetchPendingUsers() // ডাটা রিলোড করবে
+                fetchPendingUsers()
             }
-            .addOnFailureListener { exception ->
-                Toast.makeText(this, "Failed to approve: ${exception.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener {
+                db.collection("employees").whereEqualTo("employeeId", cleanId).get()
+                    .addOnSuccessListener { snapshot ->
+                        if (!snapshot.isEmpty) {
+                            val realDocId = snapshot.documents.first().id
+                            db.collection("employees").document(realDocId).update("status", status)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "User Approved Successfully!", Toast.LENGTH_SHORT).show()
+                                    fetchPendingUsers()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this, "Failed to approve: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            Toast.makeText(this, "Failed to approve user document", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to approve: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
             }
     }
 
@@ -94,13 +116,32 @@ class ApprovalActivity : AppCompatActivity() {
     }
 
     private fun deleteUser(id: String) {
-        db.collection("employees").document(id).delete()
+        val cleanId = id.trim()
+        db.collection("employees").document(cleanId).delete()
             .addOnSuccessListener {
                 Toast.makeText(this, "User Rejected & Deleted!", Toast.LENGTH_SHORT).show()
-                fetchPendingUsers() // ডাটা রিলোড করবে
+                fetchPendingUsers()
             }
-            .addOnFailureListener { exception ->
-                Toast.makeText(this, "Failed to delete: ${exception.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener {
+                db.collection("employees").whereEqualTo("employeeId", cleanId).get()
+                    .addOnSuccessListener { snapshot ->
+                        if (!snapshot.isEmpty) {
+                            val realDocId = snapshot.documents.first().id
+                            db.collection("employees").document(realDocId).delete()
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "User Rejected & Deleted!", Toast.LENGTH_SHORT).show()
+                                    fetchPendingUsers()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            Toast.makeText(this, "Failed to find user document to delete", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
             }
     }
 }
